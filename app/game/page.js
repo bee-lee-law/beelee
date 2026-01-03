@@ -3,22 +3,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useIsMobile } from "@/hooks/useIsMobile";
 
-const enemyBP = {
-    id: 1,
-    x: 0,
-    y: 0,
-    type: 'tanky',
-    health: 1,
-    tier: 1
-}
-const bulletBP = {
-    id: 1,
-    x: 0,
-    y: 0,
-    damage: 1,
-    hostile: false
-}
-
 const PlayerShipSVG = () => (
   <svg width="40" height="40" viewBox="0 0 40 40">
     <polygon points="20,5 35,35 5,35" fill="#A882DD" stroke="#45CB85" strokeWidth="2"/>
@@ -89,6 +73,32 @@ const PulseIconSVG = () => (
   </svg>
 );
 
+const LeftChevronSVG = () => (
+  <svg width="40" height="100%" viewBox="0 0 40 120" preserveAspectRatio="none">
+    <path
+      d="M 30 20 L 10 60 L 30 100"
+      fill="none"
+      stroke="#fff5e4"
+      strokeWidth="4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const RightChevronSVG = () => (
+  <svg width="40" height="100%" viewBox="0 0 40 120" preserveAspectRatio="none">
+    <path
+      d="M 10 20 L 30 60 L 10 100"
+      fill="none"
+      stroke="#fff5e4"
+      strokeWidth="4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 const useKeyPress = () => {
     const [keysPressed, setKeysPressed] = useState({});
 
@@ -118,21 +128,12 @@ const useKeyPress = () => {
 
 
 export default function Home() {
-    const isMobile = useIsMobile();
-    const screenSizeRef = useRef({ width: 600, height: 700, radius: 20 });
 
-    useEffect(() => {
-    screenSizeRef.current = {
-        width: isMobile ? 375 : 600,
-        height: isMobile ? 667 : 700,
-        radius: isMobile ? 5: 20
-    };
-    }, []);
 
     return (
         <div className="min-h-screen flex items-center justify-center px-6 ">
         <main className="max-w-2xl w-full">
-            <GameContainer screen={screenSizeRef} />
+            <GameContainer /*screen={screenSizeRef}*/ />
         </main>
         </div>
     );
@@ -140,6 +141,20 @@ export default function Home() {
 
 
 function GameContainer(props){
+    const { isMobile, mounted } = useIsMobile();
+    const screenSizeRef = useRef({ width: 600, height: 700, radius: 20, loaded: false });
+
+    useEffect(() => {
+        if (!mounted) return; // Wait until mounted to initialize
+
+        screenSizeRef.current = {
+            width: isMobile ? 375 : 600,
+            height: isMobile ? 700 : 700,
+            radius: isMobile ? 5: 20,
+            loaded: true
+        };
+        initializeValues(isMobile);
+    }, [isMobile, mounted]);
 
     const enemyTypes = {
     fast: {
@@ -177,8 +192,8 @@ function GameContainer(props){
     };
 
     // Game state
-    const [player, setPlayer] = useState({ x: 400, y: 540, width: 40, height: 40, health: 100, speed: 6, atkSpeed: 0, damage: 10 });
-    const playerRef = useRef({ x: 400, y: 540, width: 40, height: 40, health: 100, speed: 6, atkSpeed: 0, damage: 10 })
+    const [player, setPlayer] = useState({ x: 200, y: 540, width: 40, height: 40, health: 100, speed: 6, atkSpeed: 0, damage: 10 });
+    const playerRef = useRef({ x: 200, y: 540, width: 40, height: 40, health: 100, speed: 6, atkSpeed: 0, damage: 10 })
     const [enemies, setEnemies] = useState([]);
     const enemiesRef = useRef([]);
     const [playerBullets, setPlayerBullets] = useState([]);
@@ -201,6 +216,20 @@ function GameContainer(props){
     const [enemiesSpawnedThisWave, setEnemiesSpawnedThisWave] = useState(0);
     const keysPressed = useKeyPress();
     const keysPressedRef = useRef({});
+    const [pointer, setPointer] = useState({});
+    const pointerRef = useRef({});
+
+    const handlePointerAction = (e) => {
+        e.preventDefault(); // Prevent default touch behavior
+        const id = e.currentTarget.id;
+        if(e.type === 'pointerdown'){
+            setPointer(prev => ({...prev, [id]: true}));
+        }
+        else if(e.type === 'pointerup' || e.type === 'pointercancel'){
+            setPointer(prev => ({...prev, [id]: false}));
+        }
+    }
+    
 
     // Track last use time for each ability
     const abilityLastUsedRef = useRef({
@@ -209,8 +238,20 @@ function GameContainer(props){
         pulse: -Infinity
     });
 
+    const initializeValues = (isMobile) => {
+        console.log('initializing');
+        if(isMobile){
+            setPlayer({ x: 187, y: 540, width: 40, height: 40, health: 100, speed: 6, atkSpeed: 0, damage: 10 });
+        }
+        else{
+            setPlayer({ x: 300, y: 540, width: 40, height: 40, health: 100, speed: 6, atkSpeed: 0, damage: 10 });
+        }
+        return;
+    }
+
     useEffect(() => {
         keysPressedRef.current = keysPressed;
+        pointerRef.current = pointer;
         playerRef.current = player;
         waveRef.current = wave;
         enemiesRef.current = enemies;
@@ -221,7 +262,8 @@ function GameContainer(props){
         pulseEffectsRef.current = pulseEffects;
         shieldEffectRef.current = shieldEffect;
         scoreRef.current = score;
-    }, [keysPressed, player, wave, enemies, playerBullets, enemyBullets, hitNotes, statusMessage, pulseEffects, shieldEffect, score]);
+    }, [keysPressed, pointer, player, wave, enemies, playerBullets, enemyBullets, hitNotes, statusMessage, pulseEffects, shieldEffect, score]);
+
 
     // TODO notes:
     //  -Feedback when damage taken by p or e
@@ -252,7 +294,7 @@ function GameContainer(props){
     // Spawn a single enemy
     const spawnEnemy = (type, tier) => {
         const stats = getEnemyStats(type, tier);
-        const screenWidth = props.screen.current.width;
+        const screenWidth = screenSizeRef.current.width;
 
         const newEnemy = {
             id: Date.now() + Math.random(),
@@ -316,8 +358,8 @@ function GameContainer(props){
     const handlePlayerMove = (keys) => {
         const speed = playerRef.current.speed;
         let val;
-        const leftkey = (keys['ArrowLeft'] || keys['a']);
-        const rightkey = (keys['ArrowRight'] || keys['d']);
+        const leftkey = (keys['ArrowLeft'] || keys['a'] || pointerRef.current['moveLeft']);
+        const rightkey = (keys['ArrowRight'] || keys['d'] || pointerRef.current['moveRight']);
         if(leftkey) val = -1*speed;
         if(rightkey) val = speed;
         if(val) return val
@@ -332,7 +374,7 @@ function GameContainer(props){
                 newX = Math.max(0, newX+playerMove);
             }
             else if(playerMove > 0){
-                newX = Math.min(props.screen.current.width-playerRef.current.width, newX+playerMove);
+                newX = Math.min(screenSizeRef.current.width-playerRef.current.width, newX+playerMove);
             }
             return {...prev, x:newX, health: prev.health-damageTaken}
         })
@@ -348,7 +390,7 @@ function GameContainer(props){
     }
     const updatePlayerBullets = (addPlayerShot, currentTime, playerBulletDelete=[], volley) => {
         const volleyCount = 18;
-        const spacing = Math.floor(props.screen.current.width/volleyCount)-1;
+        const spacing = Math.floor(screenSizeRef.current.width/volleyCount)-1;
         const midVolley = Math.floor(volleyCount/2);
         const verticalAdjust = 20;
         let volleyShots = [];
@@ -512,7 +554,7 @@ function GameContainer(props){
 
                 if(enemy.stopy){
                     let newPos = enemy.x + (enemy.direction*enemy.speed) + pushX;
-                    if (newPos < 0 || newPos > props.screen.current.width-enemy.width){ // When hitting wall, switch direction and drop, accellerate
+                    if (newPos < 0 || newPos > screenSizeRef.current.width-enemy.width){ // When hitting wall, switch direction and drop, accellerate
                         enemy.direction *= -1;
                         enemy.speed = Math.min(enemy.speed*1.1, 10);
                         enemy.y += enemy.speed;
@@ -524,7 +566,7 @@ function GameContainer(props){
                 }
 
             })
-            .filter(enemy => enemy.health > 0 && enemy.y < 570 && enemy.x + enemy.width > 0 && enemy.x + (enemy.width/2) < props.screen.current.width)
+            .filter(enemy => enemy.health > 0 && enemy.y < 570 && enemy.x + enemy.width > 0 && enemy.x + (enemy.width/2) < screenSizeRef.current.width)
         )
 
         //console.log('scoreToAdd at return:', scoreToAdd);
@@ -560,9 +602,10 @@ function GameContainer(props){
     }
 
     const handlePlayerKeys = (keys) => {
-        if(keys['1'])return 1;
-        if(keys['2'])return 2;
-        if(keys['3'])return 3;
+        if(keys['1'] || pointerRef.current['volley'])return 1;
+        if(keys['2'] || pointerRef.current['shield'])return 2;
+        if(keys['3'] || pointerRef.current['pulse'])return 3;
+
         return false;
     }
 
@@ -911,6 +954,7 @@ function GameContainer(props){
         return () => clearInterval(checkWaveComplete);
     }, [enemies.length, enemiesSpawnedThisWave, gameStatus]);
 
+
     // Simple AABB collision detection
     const isColliding = (obj1, obj2, margin=0) => {
     return (
@@ -935,18 +979,6 @@ function GameContainer(props){
             damage: enemy.damage
         }
     };
-
-    const containerStyle = {
-        position: 'relative',
-        border: '1px solid black',
-        width: props.screen.current.width,
-        height: props.screen.current.height,
-        background: '#1a1a1a',
-        borderRadius: props.screen.current.radius,
-        overflow: 'hidden'
-    }
-
-
 
     const handleKeyDown = (e) => {
         //if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' '].includes(e.key)) {
@@ -975,6 +1007,35 @@ function GameContainer(props){
             pulse: calculatePercent('pulse')
         };
     };
+
+    // Don't render game until screen size is determined
+    if (!mounted) {
+        return (
+            <div style={{
+                width: '600px',
+                height: '700px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: '#1a1a1a',
+                color: '#fff5e4',
+                borderRadius: '20px'
+            }}>
+                Loading...
+            </div>
+        );
+    }
+
+        const containerStyle = {
+        position: 'relative',
+        border: '1px solid black',
+        width: screenSizeRef.current.width,
+        height: screenSizeRef.current.height,
+        background: '#1a1a1a',
+        borderRadius: screenSizeRef.current.radius,
+        overflow: 'hidden',
+        userSelect: 'none',
+    }
 
     return(
         <div className="flex-none" style={containerStyle} onKeyDown={handleKeyDown}>
@@ -1100,10 +1161,11 @@ function GameContainer(props){
             }
 
             <GameUI
-                screen={props.screen}
+                screenSizeRef={screenSizeRef}
                 player={player}
                 score={score}
                 wave={wave}
+                handlePointerAction={handlePointerAction}
                 abilities={(() => {
                     const cooldowns = calculateAbilityCooldowns(performance.now());
                     return {
@@ -1129,7 +1191,7 @@ function GameContainer(props){
     )
 }
 
-function AbilityIcon({ Icon, hotkey, cooldownPercent = 0, isLocked = false, isActive = false, color }) {
+function AbilityIcon({ Icon, hotkey, cooldownPercent = 0, isLocked = false, isActive = false, color, id, handlePointerAction }) {
     const size = 52;
     const iconStyle = {
         position: 'relative',
@@ -1142,7 +1204,7 @@ function AbilityIcon({ Icon, hotkey, cooldownPercent = 0, isLocked = false, isAc
         alignItems: 'center',
         justifyContent: 'center',
         boxShadow: isActive ? `0 0 20px ${color}` : 'none',
-        transition: 'box-shadow 0.2s'
+        transition: 'box-shadow 0.2s',
     };
 
     const hotkeyStyle = {
@@ -1177,7 +1239,7 @@ function AbilityIcon({ Icon, hotkey, cooldownPercent = 0, isLocked = false, isAc
     const offset = circumference * (cooldownPercent / 100);
 
     return (
-        <div style={iconStyle}>
+        <div id={id} style={iconStyle} onPointerDown={handlePointerAction} onPointerUp={handlePointerAction} onPointerCancel={handlePointerAction}>
             <Icon />
             <div style={hotkeyStyle}>{hotkey}</div>
 
@@ -1223,16 +1285,25 @@ function GameUI(props){
         position: 'absolute',
         width: '100%',
         height: '120px',
-        borderRadius: props.screen.current.radius,
+        borderRadius: props.screenSizeRef.current.radius,
         background: '#b96025ff',
-        top: props.screen.current.height - 120,
+        top: props.screenSizeRef.current.height - 120,
         border: '4px solid #8d4c21ff',
+        display: 'flex',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '0',
+        overflow: 'hidden'
+    }
+
+    const centerContentStyle = {
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
         gap: '12px',
-        padding: '8px'
+        flex: 1
     }
 
     const statsRowStyle = {
@@ -1246,41 +1317,83 @@ function GameUI(props){
         gap: '12px'
     }
 
+    const chevronStyle = {
+        height: '100%',
+        width: '50px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'rgba(0, 0, 0, 0.2)',
+        cursor: 'pointer',
+        userSelect: 'none'
+    }
+
     return(
         <div style={uiStyle}>
-            {/* Stats Row */}
-            <div style={statsRowStyle}>
-                <div>Wave: {props.wave}</div>
-                <div>Score: {props.score}</div>
-                <div>Health: {props.player.health}</div>
+            {/* Left Chevron */}
+            <div
+                id="moveLeft"
+                style={chevronStyle}
+                onPointerDown={props.handlePointerAction}
+                onPointerUp={props.handlePointerAction}
+                onPointerCancel={props.handlePointerAction}
+            >
+                <LeftChevronSVG />
             </div>
 
-            {/* Abilities Row */}
-            <div style={abilitiesRowStyle}>
-                <AbilityIcon
-                    Icon={VolleyIconSVG}
-                    hotkey={1}
-                    cooldownPercent={props.abilities?.volley?.cooldownPercent || 0}
-                    isLocked={props.abilities?.volley?.isLocked || false}
-                    isActive={props.abilities?.volley?.isActive || false}
-                    color="#A882DD"
-                />
-                <AbilityIcon
-                    Icon={ShieldIconSVG}
-                    hotkey={2}
-                    cooldownPercent={props.abilities?.shield?.cooldownPercent || 0}
-                    isLocked={props.abilities?.shield?.isLocked || false}
-                    isActive={props.abilities?.shield?.isActive || false}
-                    color="#4A90E2"
-                />
-                <AbilityIcon
-                    Icon={PulseIconSVG}
-                    hotkey={3}
-                    cooldownPercent={props.abilities?.pulse?.cooldownPercent || 0}
-                    isLocked={props.abilities?.pulse?.isLocked || false}
-                    isActive={props.abilities?.pulse?.isActive || false}
-                    color="#45CB85"
-                />
+            {/* Center Content */}
+            <div style={centerContentStyle}>
+                {/* Stats Row */}
+                <div style={statsRowStyle}>
+                    <div>Wave: {props.wave}</div>
+                    <div>Score: {props.score}</div>
+                    <div>Health: {props.player.health}</div>
+                </div>
+
+                {/* Abilities Row */}
+                <div style={abilitiesRowStyle}>
+                    <AbilityIcon
+                        Icon={VolleyIconSVG}
+                        hotkey={1}
+                        cooldownPercent={props.abilities?.volley?.cooldownPercent || 0}
+                        isLocked={props.abilities?.volley?.isLocked || false}
+                        isActive={props.abilities?.volley?.isActive || false}
+                        color="#A882DD"
+                        id={"volley"}
+                        handlePointerAction={props.handlePointerAction}
+                    />
+                    <AbilityIcon
+                        Icon={ShieldIconSVG}
+                        hotkey={2}
+                        cooldownPercent={props.abilities?.shield?.cooldownPercent || 0}
+                        isLocked={props.abilities?.shield?.isLocked || false}
+                        isActive={props.abilities?.shield?.isActive || false}
+                        color="#4A90E2"
+                        id={"shield"}
+                        handlePointerAction={props.handlePointerAction}
+                    />
+                    <AbilityIcon
+                        Icon={PulseIconSVG}
+                        hotkey={3}
+                        cooldownPercent={props.abilities?.pulse?.cooldownPercent || 0}
+                        isLocked={props.abilities?.pulse?.isLocked || false}
+                        isActive={props.abilities?.pulse?.isActive || false}
+                        color="#45CB85"
+                        id={"pulse"}
+                        handlePointerAction={props.handlePointerAction}
+                    />
+                </div>
+            </div>
+
+            {/* Right Chevron */}
+            <div
+                id="moveRight"
+                style={chevronStyle}
+                onPointerDown={props.handlePointerAction}
+                onPointerUp={props.handlePointerAction}
+                onPointerCancel={props.handlePointerAction}
+            >
+                <RightChevronSVG />
             </div>
         </div>
     )

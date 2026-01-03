@@ -3,13 +3,16 @@
 import { useMediaQuery } from './useMediaQuery';
 
 export function useIsMobile() {
-  return useMediaQuery('(max-width: 768px)');
+  const { matches, mounted } = useMediaQuery('(max-width: 768px)');
+  return { isMobile: matches, mounted };
 }
 
 export function useIsTablet() {
-  return useMediaQuery('(min-width: 769px) and (max-width: 1024px)');
+  const { matches, mounted } = useMediaQuery('(min-width: 769px) and (max-width: 1024px)');
+  return { isTablet: matches, mounted };
 }
 
 export function useIsDesktop() {
-  return useMediaQuery('(min-width: 1025px)');
+  const { matches, mounted } = useMediaQuery('(min-width: 1025px)');
+  return { isDesktop: matches, mounted };
 }

@@ -17,6 +17,6 @@ export function useMediaQuery(query) {
     return () => media.removeEventListener('change', listener);
   }, [query]);
 
-  // Return false during SSR to avoid hydration mismatch
-  return mounted ? matches : false;
+  // Return both mounted state and matches
+  return { matches: mounted ? matches : false, mounted };
 }
