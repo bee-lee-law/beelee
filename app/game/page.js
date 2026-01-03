@@ -46,6 +46,49 @@ const ShootyEnemySVG = () => (
   </svg>
 );
 
+const VolleyIconSVG = () => (
+  <svg width="48" height="48" viewBox="0 0 48 48">
+    <g fill="#A882DD" stroke="#9575CD" strokeWidth="1.5">
+      <polygon points="24,8 26,18 22,18" />
+      <polygon points="16,14 19,23 13,21" />
+      <polygon points="32,14 35,21 29,23" />
+      <polygon points="10,22 14,30 8,29" />
+      <polygon points="38,22 40,29 34,30" />
+    </g>
+    <circle cx="24" cy="36" r="6" fill="#A882DD" stroke="#9575CD" strokeWidth="2"/>
+  </svg>
+);
+
+const ShieldIconSVG = () => (
+  <svg width="48" height="48" viewBox="0 0 48 48">
+    <path
+      d="M24,6 L38,12 L38,24 C38,32 32,38 24,42 C16,38 10,32 10,24 L10,12 Z"
+      fill="#4A90E2"
+      stroke="#6BB6FF"
+      strokeWidth="2"
+    />
+    <path
+      d="M24,12 L32,16 L32,24 C32,28 28,32 24,36 C20,32 16,28 16,24 L16,16 Z"
+      fill="#6BB6FF"
+      opacity="0.5"
+    />
+  </svg>
+);
+
+const PulseIconSVG = () => (
+  <svg width="48" height="48" viewBox="0 0 48 48">
+    <circle cx="24" cy="24" r="18" fill="none" stroke="#45CB85" strokeWidth="2" opacity="0.3"/>
+    <circle cx="24" cy="24" r="12" fill="none" stroke="#45CB85" strokeWidth="2.5" opacity="0.6"/>
+    <circle cx="24" cy="24" r="6" fill="#45CB85" stroke="#6FD9A8" strokeWidth="2"/>
+    <g stroke="#45CB85" strokeWidth="2" strokeLinecap="round">
+      <line x1="24" y1="12" x2="24" y2="8" />
+      <line x1="24" y1="40" x2="24" y2="36" />
+      <line x1="12" y1="24" x2="8" y2="24" />
+      <line x1="40" y1="24" x2="36" y2="24" />
+    </g>
+  </svg>
+);
+
 const useKeyPress = () => {
     const [keysPressed, setKeysPressed] = useState({});
 
@@ -126,6 +169,13 @@ function GameContainer(props){
     }
     };
 
+    // Ability cooldowns (in milliseconds)
+    const abilityCooldowns = {
+        volley: 4000,   // 4 seconds
+        shield: 12000,  // 12 seconds
+        pulse: 10000    // 10 seconds
+    };
+
     // Game state
     const [player, setPlayer] = useState({ x: 400, y: 540, width: 40, height: 40, health: 100, speed: 6, atkSpeed: 0, damage: 10 });
     const playerRef = useRef({ x: 400, y: 540, width: 40, height: 40, health: 100, speed: 6, atkSpeed: 0, damage: 10 })
@@ -151,6 +201,13 @@ function GameContainer(props){
     const [enemiesSpawnedThisWave, setEnemiesSpawnedThisWave] = useState(0);
     const keysPressed = useKeyPress();
     const keysPressedRef = useRef({});
+
+    // Track last use time for each ability
+    const abilityLastUsedRef = useRef({
+        volley: -Infinity,  // -Infinity allows immediate first use
+        shield: -Infinity,
+        pulse: -Infinity
+    });
 
     useEffect(() => {
         keysPressedRef.current = keysPressed;
@@ -290,7 +347,7 @@ function GameContainer(props){
         return false;
     }
     const updatePlayerBullets = (addPlayerShot, currentTime, playerBulletDelete=[], volley) => {
-        const volleyCount = 12;
+        const volleyCount = 18;
         const spacing = Math.floor(props.screen.current.width/volleyCount)-1;
         const midVolley = Math.floor(volleyCount/2);
         const verticalAdjust = 20;
@@ -510,13 +567,41 @@ function GameContainer(props){
     }
 
     const handlePlayerAbilities = (currentTime, playerKeys) => {
-        let pulsesToAdd = playerKeys === 3 ? triggerPulse(currentTime) : null;
-        let shieldToAdd = playerKeys === 2 ? triggerShield(currentTime) : null;
-        let volley = playerKeys === 1;
-        return {pulsesToAdd: pulsesToAdd, shieldToAdd: shieldToAdd, volley: volley}
+        let pulsesToAdd = null;
+        let shieldToAdd = null;
+        let volley = false;
+
+        // Check Pulse (key 3)
+        if (playerKeys === 3) {
+            const timeSinceLastPulse = currentTime - abilityLastUsedRef.current.pulse;
+            if (timeSinceLastPulse >= abilityCooldowns.pulse) {
+                pulsesToAdd = triggerPulse(currentTime);
+                abilityLastUsedRef.current.pulse = currentTime;
+            }
+        }
+
+        // Check Shield (key 2)
+        if (playerKeys === 2) {
+            const timeSinceLastShield = currentTime - abilityLastUsedRef.current.shield;
+            if (timeSinceLastShield >= abilityCooldowns.shield) {
+                shieldToAdd = triggerShield(currentTime);
+                abilityLastUsedRef.current.shield = currentTime;
+            }
+        }
+
+        // Check Volley (key 1)
+        if (playerKeys === 1) {
+            const timeSinceLastVolley = currentTime - abilityLastUsedRef.current.volley;
+            if (timeSinceLastVolley >= abilityCooldowns.volley) {
+                volley = true;
+                abilityLastUsedRef.current.volley = currentTime;
+            }
+        }
+
+        return {pulsesToAdd, shieldToAdd, volley};
     }
 
-    const updateStatusMessage = (currentTime, playerKeys) => {
+    const updateStatusMessage = (currentTime, pulsesToAdd, shieldToAdd, volley) => {
         // Add status message to text
         // Fade
         // Delete old message
@@ -527,13 +612,13 @@ function GameContainer(props){
             return (1-(end-start)/lifeSpan);
         }
         //console.log(currentTime);
-        if(playerKeys == 1){
+        if(volley){
             newMessage = {id: currentTime + Math.random(), message: '!! -- VOLLEY -- !!', start: currentTime, opacity: 1}
         }
-        if(playerKeys == 2){
+        if(shieldToAdd){
             newMessage = {id: currentTime + Math.random(), message: '!! -- SHIELD -- !!', start: currentTime, opacity: 1}
         }
-        if(playerKeys == 3){
+        if(pulsesToAdd){
             newMessage = {id: currentTime + Math.random(), message: '!! -- PULSE -- !!', start: currentTime, opacity: 1}
         }
         if(newMessage)setStatusMessage(newMessage);
@@ -765,7 +850,7 @@ function GameContainer(props){
             updatePlayer(playerMove, filteredPlayerHealthUpdates);
 
             // Update status message
-            updateStatusMessage(currentTime, playerKeys);
+            updateStatusMessage(currentTime, pulsesToAdd, shieldToAdd, volley);
 
             // Update pulse effects
             updatePulseEffects(pulsesToAdd);
@@ -774,7 +859,6 @@ function GameContainer(props){
             updateShieldEffect(shieldToAdd);
 
             // Update score
-            //console.log('scoreToAdd received in game loop:', scoreToAdd);
             if (scoreToAdd > 0) {
                 setScore(prev => prev + scoreToAdd);
             }
@@ -869,6 +953,27 @@ function GameContainer(props){
             e.preventDefault(); // Prevents page scrolling
         //}
         //setKeysPressed(prev => ({ ...prev, [e.key]: true }));
+    };
+
+    const calculateAbilityCooldowns = (currentTime) => {
+        const calculatePercent = (abilityName) => {
+            const timeSinceLastUse = currentTime - abilityLastUsedRef.current[abilityName];
+            const cooldownDuration = abilityCooldowns[abilityName];
+
+            if (timeSinceLastUse >= cooldownDuration) {
+                return 0; // Ready
+            }
+
+            // Calculate percentage remaining (100 = just used, 0 = ready)
+            const percentComplete = (timeSinceLastUse / cooldownDuration) * 100;
+            return 100 - percentComplete;
+        };
+
+        return {
+            volley: calculatePercent('volley'),
+            shield: calculatePercent('shield'),
+            pulse: calculatePercent('pulse')
+        };
     };
 
     return(
@@ -994,26 +1099,189 @@ function GameContainer(props){
             : <></>
             }
 
-            <GameUI screen={props.screen} player={player} score={score} wave={wave} />
+            <GameUI
+                screen={props.screen}
+                player={player}
+                score={score}
+                wave={wave}
+                abilities={(() => {
+                    const cooldowns = calculateAbilityCooldowns(performance.now());
+                    return {
+                        volley: {
+                            cooldownPercent: cooldowns.volley,
+                            isLocked: false,
+                            isActive: false
+                        },
+                        shield: {
+                            cooldownPercent: cooldowns.shield,
+                            isLocked: false,
+                            isActive: shieldEffect !== null
+                        },
+                        pulse: {
+                            cooldownPercent: cooldowns.pulse,
+                            isLocked: false,
+                            isActive: pulseEffects.length > 0
+                        }
+                    };
+                })()}
+            />
         </div>
     )
+}
+
+function AbilityIcon({ Icon, hotkey, cooldownPercent = 0, isLocked = false, isActive = false, color }) {
+    const size = 52;
+    const iconStyle = {
+        position: 'relative',
+        width: `${size}px`,
+        height: `${size}px`,
+        background: 'rgba(0, 0, 0, 0.3)',
+        border: `2px solid ${color}`,
+        borderRadius: '8px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        boxShadow: isActive ? `0 0 20px ${color}` : 'none',
+        transition: 'box-shadow 0.2s'
+    };
+
+    const hotkeyStyle = {
+        position: 'absolute',
+        top: '4px',
+        right: '4px',
+        fontSize: '12px',
+        fontWeight: 'bold',
+        color: 'white',
+        textShadow: '1px 1px 2px rgba(0, 0, 0, 0.8)',
+        pointerEvents: 'none'
+    };
+
+    const lockOverlayStyle = {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        background: 'rgba(0, 0, 0, 0.7)',
+        borderRadius: '6px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '24px',
+        pointerEvents: 'none'
+    };
+
+    // Circular progress overlay
+    const radius = (size - 8) / 2; // Account for border and stroke
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference * (cooldownPercent / 100);
+
+    return (
+        <div style={iconStyle}>
+            <Icon />
+            <div style={hotkeyStyle}>{hotkey}</div>
+
+            {/* Circular cooldown progress */}
+            {cooldownPercent > 0 && (
+                <svg
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        pointerEvents: 'none',
+                        transform: 'rotate(-90deg)'
+                    }}
+                >
+                    <circle
+                        cx={size / 2}
+                        cy={size / 2}
+                        r={radius}
+                        fill="none"
+                        stroke="rgba(255, 255, 255, 0.5)"
+                        strokeWidth="4"
+                        strokeDasharray={circumference}
+                        strokeDashoffset={offset}
+                        strokeLinecap="round"
+                    />
+                </svg>
+            )}
+
+            {/* Lock overlay */}
+            {isLocked && (
+                <div style={lockOverlayStyle}>
+                    🔒
+                </div>
+            )}
+        </div>
+    );
 }
 
 function GameUI(props){
     const uiStyle = {
         position: 'absolute',
         width: '100%',
-        height: '110px',
+        height: '120px',
         borderRadius: props.screen.current.radius,
         background: '#b96025ff',
-        top: props.screen.current.height - 110,
-        border: '4px solid #8d4c21ff'
+        top: props.screen.current.height - 120,
+        border: '4px solid #8d4c21ff',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: '12px',
+        padding: '8px'
     }
+
+    const statsRowStyle = {
+        display: 'flex',
+        gap: '24px',
+        fontSize: '14px'
+    }
+
+    const abilitiesRowStyle = {
+        display: 'flex',
+        gap: '12px'
+    }
+
     return(
-        <div className="flex items-center justify-center gap-6" style={uiStyle}>
-            <div>Wave: {props.wave}</div>
-            <div>Score: {props.score}</div>
-            <div>Health: {props.player.health}</div>
+        <div style={uiStyle}>
+            {/* Stats Row */}
+            <div style={statsRowStyle}>
+                <div>Wave: {props.wave}</div>
+                <div>Score: {props.score}</div>
+                <div>Health: {props.player.health}</div>
+            </div>
+
+            {/* Abilities Row */}
+            <div style={abilitiesRowStyle}>
+                <AbilityIcon
+                    Icon={VolleyIconSVG}
+                    hotkey={1}
+                    cooldownPercent={props.abilities?.volley?.cooldownPercent || 0}
+                    isLocked={props.abilities?.volley?.isLocked || false}
+                    isActive={props.abilities?.volley?.isActive || false}
+                    color="#A882DD"
+                />
+                <AbilityIcon
+                    Icon={ShieldIconSVG}
+                    hotkey={2}
+                    cooldownPercent={props.abilities?.shield?.cooldownPercent || 0}
+                    isLocked={props.abilities?.shield?.isLocked || false}
+                    isActive={props.abilities?.shield?.isActive || false}
+                    color="#4A90E2"
+                />
+                <AbilityIcon
+                    Icon={PulseIconSVG}
+                    hotkey={3}
+                    cooldownPercent={props.abilities?.pulse?.cooldownPercent || 0}
+                    isLocked={props.abilities?.pulse?.isLocked || false}
+                    isActive={props.abilities?.pulse?.isActive || false}
+                    color="#45CB85"
+                />
+            </div>
         </div>
     )
 }
