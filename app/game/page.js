@@ -132,7 +132,7 @@ export default function Home() {
 
     return (
         <div className="min-h-screen flex items-center justify-center px-6 ">
-        <main className="max-w-2xl w-full">
+        <main className="max-w-2xl w-full flex justify-center">
             <GameContainer /*screen={screenSizeRef}*/ />
         </main>
         </div>
@@ -147,13 +147,26 @@ function GameContainer(props){
     useEffect(() => {
         if (!mounted) return; // Wait until mounted to initialize
 
-        screenSizeRef.current = {
-            width: isMobile ? 375 : 600,
-            height: isMobile ? 700 : 700,
-            radius: isMobile ? 5: 20,
-            loaded: true
+        const updateScreenSize = () => {
+            // Calculate responsive height based on viewport
+            const viewportHeight = window.innerHeight;
+            const mobileHeight = Math.min(viewportHeight - 100, 800); // Max 800px, leave 100px margin for mobile browser UI
+            const desktopHeight = Math.min(viewportHeight - 80, 700); // Max 700px, leave 80px margin
+
+            screenSizeRef.current = {
+                width: isMobile ? 375 : 600,
+                height: isMobile ? mobileHeight : desktopHeight,
+                radius: isMobile ? 10: 20,
+                loaded: true
+            };
         };
+
+        updateScreenSize();
         initializeValues(isMobile);
+
+        // Listen for resize/orientation changes
+        window.addEventListener('resize', updateScreenSize);
+        return () => window.removeEventListener('resize', updateScreenSize);
     }, [isMobile, mounted]);
 
     const enemyTypes = {
@@ -240,11 +253,14 @@ function GameContainer(props){
 
     const initializeValues = (isMobile) => {
         console.log('initializing');
+        // Position player near bottom, accounting for UI height (120px) + player height (40px) + margin
+        const playerY = screenSizeRef.current.height - 160;
+
         if(isMobile){
-            setPlayer({ x: 187, y: 540, width: 40, height: 40, health: 100, speed: 6, atkSpeed: 0, damage: 10 });
+            setPlayer({ x: 187, y: playerY, width: 40, height: 40, health: 100, speed: 6, atkSpeed: 0, damage: 10 });
         }
         else{
-            setPlayer({ x: 300, y: 540, width: 40, height: 40, health: 100, speed: 6, atkSpeed: 0, damage: 10 });
+            setPlayer({ x: 300, y: playerY, width: 40, height: 40, health: 100, speed: 6, atkSpeed: 0, damage: 10 });
         }
         return;
     }
@@ -263,11 +279,6 @@ function GameContainer(props){
         shieldEffectRef.current = shieldEffect;
         scoreRef.current = score;
     }, [keysPressed, pointer, player, wave, enemies, playerBullets, enemyBullets, hitNotes, statusMessage, pulseEffects, shieldEffect, score]);
-
-
-    // TODO notes:
-    //  -Feedback when damage taken by p or e
-    //  -Flash/brief color change, red (-{dmg}) float+fade
     
     const lastShotTime = useRef(0);
     const lastFrameTime = useRef(performance.now());
@@ -416,7 +427,7 @@ function GameContainer(props){
                 .concat([...volleyShots, {
                     id: currentTime,
                     x: playerRef.current.x + 17, // Center of ship
-                    y: player.y - 5,
+                    y: player.y - Math.floor(player.height/2),
                     speed: 10,
                     width:  20,
                     height: 20
@@ -1040,7 +1051,7 @@ function GameContainer(props){
     return(
         <div className="flex-none" style={containerStyle} onKeyDown={handleKeyDown}>
             {/* Player */}
-            <div style={{ position: 'absolute', left: player.x, top: player.y }}>
+            <div style={{ position: 'absolute', left: player.x, top: player.y, zIndex: 10 }}>
                 <PlayerShipSVG />
             </div>
 
