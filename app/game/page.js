@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useIsMobile } from "@/hooks/useIsMobile";
+import next from 'next';
 
 const PlayerShipSVG = () => (
   <svg width="40" height="40" viewBox="0 0 40 40">
@@ -9,26 +10,53 @@ const PlayerShipSVG = () => (
   </svg>
 );
 
-const TankyEnemySVG = () => (
-  <svg width="50" height="50" viewBox="0 0 50 50">
-    <rect x="10" y="10" width="30" height="30" fill="#00ff00" stroke="#ffffff" strokeWidth="2"/>
-    <rect x="5" y="20" width="10" height="10" fill="#00ff00" stroke="#ffffff" strokeWidth="1"/>
-    <rect x="35" y="20" width="10" height="10" fill="#00ff00" stroke="#ffffff" strokeWidth="1"/>
-  </svg>
-);
+const TankyEnemySVG = ({ tier }) => {
+  const colors = {
+    1: '#00ff00',
+    2: '#00cc00',
+    3: '#008800'
+  };
+  const fillColor = colors[tier] || colors[1];
 
-const FastEnemySVG = () => (
-  <svg width="30" height="30" viewBox="0 0 30 30">
-    <polygon points="15,5 25,15 15,25 5,15" fill="#ff0000" stroke="#ffffff" strokeWidth="2"/>
-  </svg>
-);
+  return (
+    <svg width="50" height="50" viewBox="0 0 50 50">
+      <rect x="10" y="10" width="30" height="30" fill={fillColor} stroke="#ffffff" strokeWidth="2"/>
+      <rect x="5" y="20" width="10" height="10" fill={fillColor} stroke="#ffffff" strokeWidth="1"/>
+      <rect x="35" y="20" width="10" height="10" fill={fillColor} stroke="#ffffff" strokeWidth="1"/>
+    </svg>
+  );
+};
 
-const ShootyEnemySVG = () => (
-  <svg width="40" height="40" viewBox="0 0 40 40">
-    <polygon points="20,10 30,20 25,30 15,30 10,20" fill="#0088ff" stroke="#ffffff" strokeWidth="2"/>
-    <circle cx="20" cy="20" r="4" fill="#ffffff"/>
-  </svg>
-);
+const FastEnemySVG = ({ tier }) => {
+  const colors = {
+    1: '#ff0000',
+    2: '#ff4444',
+    3: '#ff8888'
+  };
+  const fillColor = colors[tier] || colors[1];
+
+  return (
+    <svg width="30" height="30" viewBox="0 0 30 30">
+      <polygon points="15,5 25,15 15,25 5,15" fill={fillColor} stroke="#ffffff" strokeWidth="2"/>
+    </svg>
+  );
+};
+
+const ShootyEnemySVG = ({ tier }) => {
+  const colors = {
+    1: '#0088ff',
+    2: '#00aaff',
+    3: '#00ccff'
+  };
+  const fillColor = colors[tier] || colors[1];
+
+  return (
+    <svg width="40" height="40" viewBox="0 0 40 40">
+      <polygon points="20,10 30,20 25,30 15,30 10,20" fill={fillColor} stroke="#ffffff" strokeWidth="2"/>
+      <circle cx="20" cy="20" r="4" fill="#ffffff"/>
+    </svg>
+  );
+};
 
 const VolleyIconSVG = () => (
   <svg width="48" height="48" viewBox="0 0 48 48">
@@ -99,6 +127,70 @@ const RightChevronSVG = () => (
   </svg>
 );
 
+const FrogHeadSVG = () => (
+  <svg width="100%" height="100%" viewBox="0 0 80 80" preserveAspectRatio="xMidYMid meet">
+    <style>
+      {`
+        @keyframes blink {
+          0%, 90%, 100% { opacity: 1; }
+          95% { opacity: 0; }
+        }
+        @keyframes talk {
+          0% { transform: scaleY(1); }
+          5% { transform: scaleY(0.6); }
+          10% { transform: scaleY(1); }
+          15% { transform: scaleY(0.6); }
+          20% { transform: scaleY(1); }
+          25% { transform: scaleY(0.6); }
+          30%, 50% { transform: scaleY(1); }
+          55% { transform: scaleY(0.6); }
+          60% { transform: scaleY(1); }
+          65% { transform: scaleY(0.6); }
+          70%, 100% { transform: scaleY(1); }
+        }
+        .frog-eye { animation: blink 3s infinite; }
+        .frog-mouth {
+          animation: talk 2s infinite;
+          transform-origin: center;
+        }
+      `}
+    </style>
+
+    {/* Head - pixelated oval shape */}
+    <rect x="20" y="24" width="40" height="8" fill="#45CB85" />
+    <rect x="16" y="32" width="48" height="24" fill="#45CB85" />
+    <rect x="20" y="56" width="40" height="8" fill="#45CB85" />
+
+    {/* Darker belly spot */}
+    <rect x="28" y="40" width="24" height="16" fill="#3BA873" />
+
+    {/* Eyes - bulging on sides */}
+    <g className="frog-eye">
+      {/* Left eye */}
+      <rect x="8" y="28" width="12" height="4" fill="#6FD9A8" />
+      <rect x="12" y="32" width="8" height="8" fill="#6FD9A8" />
+      <rect x="8" y="40" width="12" height="4" fill="#6FD9A8" />
+      <rect x="14" y="34" width="4" height="4" fill="#333333" /> {/* pupil */}
+
+      {/* Right eye */}
+      <rect x="60" y="28" width="12" height="4" fill="#6FD9A8" />
+      <rect x="60" y="32" width="8" height="8" fill="#6FD9A8" />
+      <rect x="60" y="40" width="12" height="4" fill="#6FD9A8" />
+      <rect x="62" y="34" width="4" height="4" fill="#333333" /> {/* pupil */}
+    </g>
+
+    {/* Mouth - animated */}
+    <g className="frog-mouth">
+      <rect x="32" y="50" width="16" height="4" fill="#333333" />
+      <rect x="28" y="54" width="24" height="2" fill="#333333" opacity="0.6" />
+    </g>
+
+    {/* Nostrils */}
+    <rect x="34" y="44" width="3" height="2" fill="#3BA873" />
+    <rect x="43" y="44" width="3" height="2" fill="#3BA873" />
+  </svg>
+);
+
 const useKeyPress = () => {
     const [keysPressed, setKeysPressed] = useState({});
 
@@ -124,16 +216,23 @@ const useKeyPress = () => {
     return keysPressed;
 };
 
+const uiBackground = '#9e511eff'
+const uiPrimary = '#5f3010ff'
+const uiSecondary = '#1e7e15ff'
+const uiTertiary = '#0e410aff'
+
+const fullText1 = "Wow, ya really blew up out there! I'll fix yer ship up for free. But next time it'll cost ya. The fancier yer ship and the more times ya see me, the more it'll be. Buy some upgrades so ye can afford it next time";
+const fullText2 = "I'm takin my cut. Try again, if ya can afford it";
+const cantRun = "Yer ships in pieces, ya dink. Better retire while ya can"
+const eggText = "-Ribbit-";
 
 
 
 export default function Home() {
-
-
     return (
         <div className="min-h-screen flex items-center justify-center px-6 ">
         <main className="max-w-2xl w-full flex justify-center">
-            <GameContainer /*screen={screenSizeRef}*/ />
+            <GameContainer />
         </main>
         </div>
     );
@@ -170,31 +269,34 @@ function GameContainer(props){
     }, [isMobile, mounted]);
 
     const enemyTypes = {
-    fast: {
-        health: 20,
-        speed: 3,
-        width: 30,
-        height: 30,
-        score: 50,
-        damage: 10,
-    },
-    tanky: {
-        health: 100,
-        speed: 1,
-        width: 50,
-        height: 50,
-        score: 150,
-        damage: 30,
-    },
-    shooty: {
-        health: 50,
-        speed: 1.5,
-        width: 40,
-        height: 40,
-        score: 100,
-        damage: 10,
-        shootInterval: 2000 // Shoots every 2 seconds
-    }
+        fast: {
+            health: 20,
+            speed: 3,
+            width: 30,
+            height: 30,
+            score: 50,
+            //damage: 10,
+            damage: 100
+        },
+        tanky: {
+            health: 100,
+            speed: 1,
+            width: 50,
+            height: 50,
+            score: 150,
+            //damage: 30,
+            damage: 100
+        },
+        shooty: {
+            health: 50,
+            speed: 1.5,
+            width: 40,
+            height: 40,
+            score: 100,
+            //damage: 10,
+            damage: 100,
+            shootInterval: 2000 // Shoots every 2 seconds
+        }
     };
 
     // Ability cooldowns (in milliseconds)
@@ -204,7 +306,20 @@ function GameContainer(props){
         pulse: 10000    // 10 seconds
     };
 
+    const upgradeSet = {
+        damage: 0,
+        atkSpeed: 0,
+        speed: 0,
+        volley: 0,
+        shield: 0,
+        pulse: 0,
+    }
     // Game state
+    const runCount = useRef(1);
+    const playerLevel = useRef(1);
+    const cash = useRef(0);
+    const repairCost = useRef(0);
+    const [upgradesState, setUpgradesState] = useState(upgradeSet)
     const [player, setPlayer] = useState({ x: 200, y: 540, width: 40, height: 40, health: 100, speed: 6, atkSpeed: 0, damage: 10 });
     const playerRef = useRef({ x: 200, y: 540, width: 40, height: 40, health: 100, speed: 6, atkSpeed: 0, damage: 10 })
     const [enemies, setEnemies] = useState([]);
@@ -231,6 +346,10 @@ function GameContainer(props){
     const keysPressedRef = useRef({});
     const [pointer, setPointer] = useState({});
     const pointerRef = useRef({});
+    const [displayedText, setDisplayedText] = useState('');
+    const [dead, setDead] = useState(false);
+    const deadRef = useRef(false);
+    
 
     const handlePointerAction = (e) => {
         e.preventDefault(); // Prevent default touch behavior
@@ -242,7 +361,92 @@ function GameContainer(props){
             setPointer(prev => ({...prev, [id]: false}));
         }
     }
+
+    // Debug: Toggle game state with 'g' key
+    /*
+    useEffect(() => {
+        const handleDebugKey = (e) => {
+            if (e.key === 'g') {
+                setGameStatus(prev => {
+                    const states = ['playing', 'gameOver', 'shopping'];
+                    const currentIndex = states.indexOf(prev);
+                    const nextIndex = (currentIndex + 1) % states.length;
+                    if(states[nextIndex] == 'playing'){
+                        initializeValues();
+                    }
+                    if(states[nextIndex] == 'shopping'){
+                        sendToShop();
+                    }
+                    console.log(`[DEBUG] Game state: ${prev} -> ${states[nextIndex]}`);
+                    return states[nextIndex];
+                });
+            }
+
+        };
+
+        window.addEventListener('keydown', handleDebugKey);
+        return () => window.removeEventListener('keydown', handleDebugKey);
+    }, []);
+    */
+
+    const handleShop = (stat) => {
+        let cost = playerLevel.current*5;
+        if(cash.current >= cost){
+            setUpgradesState(prev=> ({...prev, [stat]: prev[stat] + 1}));
+            playerLevel.current += 1;
+            cash.current -= cost;
+        }
+    }
     
+    // Shop gameplay loop
+    const textIndexRef = useRef(0);
+    const shopTextRef = useRef(fullText1);
+    useEffect(() => {
+        if(runCount.current <= 1)shopTextRef.current = fullText1;
+        else{
+            shopTextRef.current = fullText2;
+        }
+
+        if (gameStatus !== 'shopping') {
+            setDisplayedText('');            
+            return;
+        }
+
+
+        if(pointerRef.current['frogHead']){
+            textIndexRef.current = 0;
+            shopTextRef.current = eggText;
+            //cash.current += 100;
+        }
+        let upgradeCheck = Object.keys(upgradesState).filter(element => pointerRef.current[element]);
+        if(upgradeCheck && upgradeCheck.length > 0) handleShop(upgradeCheck[0]);
+
+        // Animate text letter by letter when in shopping state
+        const typeSpeed = 15; // ms per character
+        const interval = setInterval(() => {
+            if (textIndexRef.current < shopTextRef.current.length) {
+                setDisplayedText(shopTextRef.current.substring(0, textIndexRef.current + 1));
+                textIndexRef.current = textIndexRef.current+1;
+            } else {
+                clearInterval(interval);
+            }
+        }, typeSpeed);
+
+        if(pointerRef.current['flyOn'] && cash.current >= 0){
+            initializeValues(isMobile, true);
+            setGameStatus('playing');
+        }
+        if(pointerRef.current['flyOn'] && cash.current < 0){
+            textIndexRef.current = 0;
+            shopTextRef.current = cantRun;
+        }
+        if(pointerRef.current['retire']){
+            setGameStatus('gameOver');
+        }
+
+        return () => clearInterval(interval);
+
+    }, [gameStatus, pointer]);
 
     // Track last use time for each ability
     const abilityLastUsedRef = useRef({
@@ -251,17 +455,28 @@ function GameContainer(props){
         pulse: -Infinity
     });
 
-    const initializeValues = (isMobile) => {
+    const initializeValues = (isMobile, newRun=false) => {
         console.log('initializing');
         // Position player near bottom, accounting for UI height (120px) + player height (40px) + margin
         const playerY = screenSizeRef.current.height - 160;
-
-        if(isMobile){
-            setPlayer({ x: 187, y: playerY, width: 40, height: 40, health: 100, speed: 6, atkSpeed: 0, damage: 10 });
+        const playerX = isMobile ? 187 : 300;
+        const atkSpeed = upgradesState.atkSpeed*20;
+        const damage = 10 + (upgradesState.damage*2);
+        const speed = 3.5 + (upgradesState.speed/2);
+        setDead(false);
+        setWave(1);
+        setScore(0);
+        setEnemies([]);
+        setPlayerBullets([]);
+        setEnemyBullets([]);
+        //setDisplayedText(fullText1);
+        abilityLastUsedRef.current = {
+            volley: -Infinity,
+            shield: -Infinity,
+            pulse: -Infinity
         }
-        else{
-            setPlayer({ x: 300, y: playerY, width: 40, height: 40, health: 100, speed: 6, atkSpeed: 0, damage: 10 });
-        }
+        if(newRun) runCount.current += 1;
+        setPlayer({ x: playerX, y: playerY, width: 40, height: 40, health: 100, speed: speed, atkSpeed: atkSpeed, damage: damage });
         return;
     }
 
@@ -278,7 +493,8 @@ function GameContainer(props){
         pulseEffectsRef.current = pulseEffects;
         shieldEffectRef.current = shieldEffect;
         scoreRef.current = score;
-    }, [keysPressed, pointer, player, wave, enemies, playerBullets, enemyBullets, hitNotes, statusMessage, pulseEffects, shieldEffect, score]);
+        deadRef.current = dead;
+    }, [keysPressed, pointer, player, wave, enemies, playerBullets, enemyBullets, hitNotes, statusMessage, pulseEffects, shieldEffect, score, dead]);
     
     const lastShotTime = useRef(0);
     const lastFrameTime = useRef(performance.now());
@@ -286,9 +502,10 @@ function GameContainer(props){
     // Determine tier based on wave number
     const getTierForWave = (wave) => {
         if (wave <= 5) return 1;
-        if (wave <= 10) return Math.random() < 0.7 ? 1 : 2; // 70% tier 1, 30% tier 2
-        if (wave <= 15) return Math.random() < 0.5 ? 2 : 3; // 50/50 tier 2 and 3
-        return Math.random() < 0.3 ? 2 : 3; // Mostly tier 3
+        if (wave <= 15) return Math.random() < 0.7 ? 1 : 2; // 70% tier 1, 30% tier 2
+        if (wave <= 30) return Math.random() < 0.5 ? 2 : 3; // 50/50 tier 2 and 3
+        if( wave <= 50) return Math.random() < 0.3 ? 2 : 3;
+        return 3;
     };
 
     const getEnemyStats = (type, tier) => {
@@ -331,7 +548,7 @@ function GameContainer(props){
 
     // Determine enemy composition for wave
     const getWaveComposition = (waveNumber) => {
-        const enemyCount = Math.min(3 + Math.floor(waveNumber / 2), 15); // Start with 3, max 15
+        const enemyCount = Math.min(5 + Math.floor(waveNumber), 50); // Start with 3, max 50
 
         const composition = [];
 
@@ -393,14 +610,14 @@ function GameContainer(props){
     
     const handlePlayerShot = (currentTime) => {
         const atkSpeed = player.atkSpeed;
-        if (currentTime - lastShotTime.current > 50 - atkSpeed) {
+        if (currentTime - lastShotTime.current > Math.max(500 - atkSpeed, 20)) {
             lastShotTime.current = currentTime;
             return true;
         }
         return false;
     }
     const updatePlayerBullets = (addPlayerShot, currentTime, playerBulletDelete=[], volley) => {
-        const volleyCount = 18;
+        const volleyCount = 10 + (upgradesState.volley*2);
         const spacing = Math.floor(screenSizeRef.current.width/volleyCount)-1;
         const midVolley = Math.floor(volleyCount/2);
         const verticalAdjust = 20;
@@ -624,6 +841,9 @@ function GameContainer(props){
         let pulsesToAdd = null;
         let shieldToAdd = null;
         let volley = false;
+        let playerHeal = 0;
+
+        if(deadRef.current) return {pulsesToAdd, shieldToAdd, volley, playerHeal};
 
         // Check Pulse (key 3)
         if (playerKeys === 3) {
@@ -640,6 +860,7 @@ function GameContainer(props){
             if (timeSinceLastShield >= abilityCooldowns.shield) {
                 shieldToAdd = triggerShield(currentTime);
                 abilityLastUsedRef.current.shield = currentTime;
+                playerHeal -= upgradesState.shield*10;
             }
         }
 
@@ -652,10 +873,10 @@ function GameContainer(props){
             }
         }
 
-        return {pulsesToAdd, shieldToAdd, volley};
+        return {pulsesToAdd, shieldToAdd, volley, playerHeal};
     }
 
-    const updateStatusMessage = (currentTime, pulsesToAdd, shieldToAdd, volley) => {
+    const updateStatusMessage = (currentTime, pulsesToAdd, shieldToAdd, volley, dead) => {
         // Add status message to text
         // Fade
         // Delete old message
@@ -675,6 +896,9 @@ function GameContainer(props){
         if(pulsesToAdd){
             newMessage = {id: currentTime + Math.random(), message: '!! -- PULSE -- !!', start: currentTime, opacity: 1}
         }
+        if(dead){
+            newMessage = {id: currentTime + Math.random(), message: <div >{'[-- -- YOU DIED -- --]'}<div><center>{'[continue]'}</center></div></div>, start: currentTime, opacity: 1}
+        }
         if(newMessage)setStatusMessage(newMessage);
         else if(statusMessageRef.current && statusMessageRef.current.start && statusMessageRef.current.start + lifeSpan < currentTime)setStatusMessage({message: '', opacity: 0});
         else setStatusMessage({...statusMessageRef.current, opacity: getOpacity(statusMessageRef.current.start, currentTime) })
@@ -686,8 +910,8 @@ function GameContainer(props){
             x: playerRef.current.x + playerRef.current.width / 2,
             y: playerRef.current.y + playerRef.current.height / 2,
             radius: 0,
-            maxRadius: 200,
-            opacity: 1
+            maxRadius: 200 + (upgradesState.pulse*10),
+            opacity: 1+(upgradesState.pulse*2)
         };
     }
 
@@ -825,8 +1049,8 @@ function GameContainer(props){
     }
 
     const updatePulseEffects = (pulsesToAdd) => {
-        const expandSpeed = 8;
-        const fadeSpeed = 0.05;
+        const expandSpeed = Math.max(1, 8-(upgradeSet.pulse/2));
+        const fadeSpeed = Math.max(0.001, .05-(upgradeSet.pulse/20));
         if(pulsesToAdd){
             setPulseEffects(prev =>
                 prev
@@ -852,8 +1076,18 @@ function GameContainer(props){
         }
     }
 
+    const die = (currentTime) => {
+        updateStatusMessage(currentTime, null, null, null, true)
+        textIndexRef.current = 0;
+        setDead(true);
+    }
+
+    // Main gameplay loop
     useEffect(() => {
         if (gameStatus !== 'playing') return;
+        repairCost.current = runCount.current > 1 ? (runCount.current*5) + (playerLevel.current*3) : 0;       
+
+        let animationId;
         const gameLoop = (currentTime) => {
             const deltaTime = currentTime - lastFrameTime.current;
             lastFrameTime.current = currentTime;
@@ -882,10 +1116,11 @@ function GameContainer(props){
             playerKeys = handlePlayerKeys(keys);
 
             // Check player shooting
-            addPlayerShot = handlePlayerShot(currentTime);
+            if(!deadRef.current) addPlayerShot = handlePlayerShot(currentTime);
 
             // Check player abilities
-            let {pulsesToAdd, shieldToAdd, volley} = handlePlayerAbilities(currentTime, playerKeys);
+            let {pulsesToAdd, shieldToAdd, volley, playerHeal} = handlePlayerAbilities(currentTime, playerKeys);
+            playerHealthUpdates.push(playerHeal);
 
             // Update player bullets
             updatePlayerBullets(addPlayerShot, currentTime, playerBulletDelete, volley)
@@ -898,10 +1133,10 @@ function GameContainer(props){
             updateEnemyBullets(allEnemyBulletDeletes, newBullets);
 
             // Update hit notes
-            updateHitNotes(hitNotesToAdd);
+            if(!deadRef.current) updateHitNotes(hitNotesToAdd);
 
             // Update player
-            updatePlayer(playerMove, filteredPlayerHealthUpdates);
+            if(!deadRef.current) updatePlayer(playerMove, filteredPlayerHealthUpdates);
 
             // Update status message
             updateStatusMessage(currentTime, pulsesToAdd, shieldToAdd, volley);
@@ -913,23 +1148,37 @@ function GameContainer(props){
             updateShieldEffect(shieldToAdd);
 
             // Update score
-            if (scoreToAdd > 0) {
+            if (scoreToAdd > 0 && !deadRef.current) {
                 setScore(prev => prev + scoreToAdd);
+                cash.current = cash.current + Math.floor(scoreToAdd/10);
             }
 
-            // Continue loop
-            requestAnimationFrame(gameLoop);
+            if(pointerRef.current['continue'] && deadRef.current){
+                cash.current = cash.current - repairCost.current + (waveRef.current*10);
+                setGameStatus('shopping');
+            }
+
+            // Continue loop - store the ID so cleanup can cancel it
+            animationId = requestAnimationFrame(gameLoop);
+            if(playerRef.current.health <= 0){
+                die(currentTime);
+            }
+
         };
 
-        const animationId = requestAnimationFrame(gameLoop);
+        animationId = requestAnimationFrame(gameLoop);
 
-        // Cleanup
-        return () => cancelAnimationFrame(animationId);
+        // Cleanup - cancel the most recent animation frame
+        return () => {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+        };
     }, [gameStatus]);
 
     // Enemy spawning loop
     useEffect(() => {
-        if (gameStatus !== 'playing') return;
+        if (gameStatus !== 'playing' || dead) return;
 
         const waveComposition = getWaveComposition(wave);
         const spawnDelay = Math.max(500, 2000 - wave * 50); // Faster spawning as waves progress
@@ -1047,13 +1296,18 @@ function GameContainer(props){
         overflow: 'hidden',
         userSelect: 'none',
     }
-
-    return(
-        <div className="flex-none" style={containerStyle} onKeyDown={handleKeyDown}>
+    
+    const playState = () => {
+        return(
+            <>
             {/* Player */}
+            {!dead ?
             <div style={{ position: 'absolute', left: player.x, top: player.y, zIndex: 10 }}>
                 <PlayerShipSVG />
             </div>
+            :
+            <></>
+            }
 
             {/* Player Bullets */}
             {playerBullets.map(bullet => (
@@ -1102,7 +1356,7 @@ function GameContainer(props){
                     left: hitNote.x,
                     top: hitNote.y,
                     color: 'red',
-                    opacity: hitNote.opacity,
+                    opacity: !dead ? hitNote.opacity : 0,
                     fontWeight: hitNote.bold ? 'bold' : 'initial',
                     fontSize: hitNote.bold ? '1.2em' : '0.8em'
                 }}
@@ -1150,26 +1404,27 @@ function GameContainer(props){
             )}
 
             {/* Status Message */}
-            { statusMessage && statusMessage.message ?
             <div
+                id={'continue'}
+                onPointerDown={handlePointerAction}
+                onPointerUp={handlePointerAction}
+                onPointerCancel={handlePointerAction}
                 style={{
                     position: 'absolute',
                     left: '50%',
                     top: '40%',
                     transform: 'translate(-50%, -50%)',
-                    opacity: statusMessage.opacity,
+                    opacity: statusMessage && statusMessage.opacity ? statusMessage.opacity : 0,
                     fontSize: '2em',
                     fontWeight: 'bold',
                     color: '#ffffff',
                     textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
-                    pointerEvents: 'none',
-                    whiteSpace: 'nowrap'
+                    pointerEvents: dead ? 'auto' : 'none',
+                    whiteSpace: 'nowrap',
                 }}
             >
-                {statusMessage.message}
+                {statusMessage && statusMessage.message}
             </div>
-            : <></>
-            }
 
             <GameUI
                 screenSizeRef={screenSizeRef}
@@ -1198,6 +1453,196 @@ function GameContainer(props){
                     };
                 })()}
             />
+            </>
+        )
+    }
+
+    const gameOverState = () => {
+        return(
+            <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%',
+                color: '#fff5e4',
+                gap: '20px'
+            }}>
+                <h1 style={{ fontSize: '3em', margin: 0 }}>GAME OVER</h1>
+                <div style={{ fontSize: '1.5em' }}>Wave: {wave}</div>
+                <div style={{ fontSize: '1.5em' }}>Score: {score}</div>
+            </div>
+        )
+    }
+
+    const shoppingState = () => {
+        const cost = 1;
+        const gameOver = cash.current < 0;
+
+        const outerStyle = {
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            color: '#fff5e4',
+            background: uiBackground,
+            gap: '20px'
+        };
+        const talkingHeadOuter = {
+            display: 'flex',
+            flexDirection: 'row',
+            height: '20%',
+            width: '100%',
+            border: `2px solid ${uiSecondary}`
+        }
+        const talkingHeadTextBox = {
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            justifyContent: 'flex-start',
+            width: '75%',
+            height: '100%',
+            fontFamily: 'monospace',
+            background: 'black',
+            borderRight: `2px solid ${uiSecondary}`,
+            padding: '1em',
+            overflow: 'hidden'
+        }
+        const talkingHeadBox = {
+            width: '25%',
+            background: uiPrimary,
+        }
+        const storeBox = {
+            display: 'flex',
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            alignItems: 'flex-start',
+            justifyContent: 'center',
+            gap: '1em',
+            width: '90%',
+        }
+        const endBox = {
+            border: '1px solid black',
+            width: '45%',
+            height: '50px',
+            borderRadius: '10px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            fontSize: '1.5em',
+        }
+
+
+        return(
+            <div style={outerStyle}>
+                <div style={talkingHeadOuter}>
+                    <div style={talkingHeadTextBox}>
+                        <div style={{
+                            fontSize: '14px',
+                            lineHeight: '1.4',
+                            wordWrap: 'break-word'
+                        }}>
+                            {displayedText}
+                        </div>
+                    </div>
+                    <div id={"frogHead"} style={talkingHeadBox} onPointerDown={handlePointerAction} onPointerUp={handlePointerAction} onPointerCancel={handlePointerAction}>
+                        <FrogHeadSVG />
+                    </div>
+                </div>
+                <h1 style={{ fontSize: '2em', margin: 0 }}>UPGRADE SHOP</h1>
+                <div style={{...storeBox, justifyContent: 'space-around'}}>
+                    <div>Score: {score}</div>
+                    <div>Run: {runCount.current}</div>
+                    <div>Cash: {cash.current}</div>
+                    <div>Level: {playerLevel.current}</div>
+                    <div>Cost: {playerLevel.current*5}</div>
+                    <div>Repair Cost: {repairCost.current}</div>
+                </div>
+                <div style={storeBox}>
+                    {Object.keys(upgradeSet).map((upgrade, key)=>{
+                        return(<StoreItem key={key} stat={upgrade} cash={cash} cost={playerLevel.current*5} upgradesState={upgradesState} handlePointerAction={handlePointerAction} />)
+                    })}
+                </div>
+                <br/>
+                <div style={storeBox}>
+                    <div id={"flyOn"} style={{...endBox, border: !gameOver ? `2px solid ${uiTertiary}` : `2px solid red`, background: !gameOver ? uiSecondary : 'darkred'}} onPointerDown={handlePointerAction} onPointerUp={handlePointerAction} onPointerCancel={handlePointerAction}><center>Fly On</center></div>
+                    <div id={"retire"} style={{...endBox, border: `2px solid ${uiTertiary}`, background: uiSecondary}} onPointerDown={handlePointerAction} onPointerUp={handlePointerAction} onPointerCancel={handlePointerAction}><center>Retire</center></div>
+                </div>
+                <div style={{color: 'red', fontSize: '.7em'}}>
+                    <center>[Warning: Upgrading ship systems too high may result in unexpected, broken, or hilarious behavior]</center>
+                </div>
+            </div>
+        )
+    }
+
+    const renderGameState = () => {
+        switch(gameStatus) {
+            case 'playing':
+                return playState();
+            case 'gameOver':
+                return gameOverState();
+            case 'shopping':
+                return shoppingState();
+            default:
+                return playState();
+        }
+    }
+
+    return(
+        <div className="flex-none" style={containerStyle} onKeyDown={handleKeyDown}>
+            {/* Debug state indicator */}
+            {/*}
+            <div style={{
+                position: 'absolute',
+                top: '10px',
+                left: '10px',
+                padding: '5px 10px',
+                background: 'rgba(0, 0, 0, 0.7)',
+                color: '#45CB85',
+                fontSize: '12px',
+                borderRadius: '4px',
+                zIndex: 1000,
+                fontFamily: 'monospace'
+            }}>
+                [DEBUG] {gameStatus}
+            </div>
+            {*/}
+            {renderGameState()}
+        </div>
+    )
+
+}
+
+
+function StoreItem({ stat, cash, cost, upgradesState, handlePointerAction}) {
+    const statNames = {
+        damage: 'Damage',
+        atkSpeed: 'Atk Speed',
+        speed: 'Agility',
+        volley: 'Volley',
+        shield: 'Shield',
+        pulse: 'Pulse',
+    }
+    const itemStyle = {
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        width: '40%',
+        height: '40px',
+        border: cash.current >= cost ? `2px solid ${uiTertiary}` : `2px solid red`,
+        background: cash.current >= cost ? uiSecondary : 'darkred',
+        borderRadius: '10px',
+        fontSize: '0.7em',
+    }
+    return(
+        <div id={stat} style={itemStyle} onPointerDown={handlePointerAction} onPointerUp={handlePointerAction} onPointerCancel={handlePointerAction}>
+            <div style={{fontWeight: 'bold'}}>
+                <center>{statNames[stat]}</center>
+            </div>
+            <div>
+                <center>Level: {upgradesState[stat]} Cost: {cost}</center>
+            </div>
         </div>
     )
 }
@@ -1297,7 +1742,7 @@ function GameUI(props){
         width: '100%',
         height: '120px',
         borderRadius: props.screenSizeRef.current.radius,
-        background: '#b96025ff',
+        background: uiBackground,
         top: props.screenSizeRef.current.height - 120,
         border: '4px solid #8d4c21ff',
         display: 'flex',
