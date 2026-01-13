@@ -140,7 +140,6 @@ export default function MapTesting({ borderRadius, markers = {}, route = {}, lan
         </Marker>
       )}
 
-      <ZoomControl position='bottomleft' />
       <MapController markers={markers} route={route} routeCoordinates={routeCoordinates} />
     </MapContainer>
   );
