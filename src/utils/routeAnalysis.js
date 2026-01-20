@@ -216,6 +216,121 @@ function calculateSummary(result) {
 }
 
 /**
+ * Calculate distance from each collision to nearest route segment
+ * @param {Array} collisions - Array of collision objects
+ * @param {Array} routeCoords - Array of [lat, lng] route points
+ * @returns {Array} Collisions with distance field filled in
+ */
+function calculateCollisionDistances(collisions, routeCoords) {
+  if (!collisions || collisions.length === 0) return [];
+
+  return collisions.map(collision => {
+    const collisionPoint = [collision.location.lat, collision.location.lng];
+    let minDistance = Infinity;
+    let nearestSegmentIndex = -1;
+
+    for (let i = 0; i < routeCoords.length - 1; i++) {
+      const segStart = routeCoords[i];
+      const segEnd = routeCoords[i + 1];
+
+      const distance = segmentToSegmentDistance(
+        collisionPoint,
+        collisionPoint,
+        segStart,
+        segEnd
+      );
+
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestSegmentIndex = i;
+      }
+    }
+
+    return {
+      ...collision,
+      distance: minDistance,
+      nearestSegmentIndex
+    };
+  });
+}
+
+/**
+ * Calculate safety impact of a single collision
+ * Uses exponential decay based on distance from route
+ * @param {Object} collision - Collision object
+ * @param {number} distance - Distance from route in meters
+ * @returns {number} Impact value (0-1)
+ */
+function calculateCollisionImpact(collision, distance) {
+  if (distance > 100) return 0;
+
+  const baseImpact = collision.safetyRating / 10;
+  const severityMultiplier = 1 + (collision.injuryRating * 0.3);
+  const distanceDecay = Math.exp(-distance / 30);
+
+  return baseImpact * severityMultiplier * distanceDecay;
+}
+
+/**
+ * Analyze collision data for route
+ * @param {Array} collisions - Array of collisions with distances
+ * @param {number} routeDistance - Total route distance in meters
+ * @returns {Object} Collision analysis results
+ */
+function analyzeCollisions(collisions, routeDistance) {
+  const nearRoute = collisions.filter(c => c.distance <= 100);
+
+  const statistics = {
+    within50m: collisions.filter(c => c.distance <= 50).length,
+    within100m: nearRoute.length,
+    averageDistance: nearRoute.length > 0
+      ? nearRoute.reduce((sum, c) => sum + c.distance, 0) / nearRoute.length
+      : 0,
+
+    bySeverity: {
+      noInjury: collisions.filter(c => c.injuryRating === 0).length,
+      possibleInjury: collisions.filter(c => c.injuryRating === 1).length,
+      minorInjury: collisions.filter(c => c.injuryRating === 2).length,
+      seriousInjury: collisions.filter(c => c.injuryRating === 3).length
+    },
+
+    byType: collisions.reduce((acc, c) => {
+      acc[c.type] = (acc[c.type] || 0) + 1;
+      return acc;
+    }, {}),
+
+    riskFactors: {
+      bicycleInvolved: collisions.filter(c => c.bicycleInvolved).length,
+      alcoholInvolved: collisions.filter(c => c.alcoholInvolved).length,
+      phoneInvolved: collisions.filter(c => c.phoneInvolved).length,
+      aggressiveDriver: collisions.filter(c => c.aggressiveDriverInvolved).length
+    }
+  };
+
+  // Calculate collision impact with distances
+  const collisionsWithImpact = nearRoute.map(c => ({
+    ...c,
+    impact: calculateCollisionImpact(c, c.distance)
+  }));
+
+  const totalImpact = collisionsWithImpact.reduce((sum, c) => sum + c.impact, 0);
+  const impactPerKm = routeDistance > 0 ? totalImpact / (routeDistance / 1000) : 0;
+  const normalizedCollisionSafety = Math.max(0, 1 - (impactPerKm / 5));
+
+  return {
+    total: collisions.length,
+    nearRoute: collisionsWithImpact,
+    statistics,
+    impact: {
+      totalImpact,
+      impactPerKm,
+      normalizedSafety: normalizedCollisionSafety,
+      safetyPenalty: normalizedCollisionSafety - 1
+    }
+  };
+}
+
+/**
  * Analyzes route coverage by bike lanes
  *
  * This function subdivides long route segments (>25m) to ensure accurate coverage
@@ -224,10 +339,11 @@ function calculateSummary(result) {
  *
  * @param {Object} routeData - Route data from getDirections()
  * @param {Object} laneData - Bike lane data from getLanes()
+ * @param {Object} collisionData - Traffic collision data from getCollisions()
  * @param {number} threshold - Distance threshold in meters (default: 15)
  * @returns {Object} Coverage analysis results
  */
-export function analyzeRouteCoverage(routeData, laneData, threshold = 15) {
+export function analyzeRouteCoverage(routeData, laneData, collisionData = null, threshold = 15) {
   try {
     // Validate inputs
     if (!routeData || !routeData.routes || routeData.routes.length === 0) {
@@ -249,6 +365,11 @@ export function analyzeRouteCoverage(routeData, laneData, threshold = 15) {
     if (routeCoords.length < 2) {
       throw new Error('Route must have at least 2 points');
     }
+
+    // Calculate collision distances if collision data provided
+    const collisionsWithDistance = collisionData?.data?.collisions
+      ? calculateCollisionDistances(collisionData.data.collisions, routeCoords)
+      : [];
 
     // 2. Initialize result object
     const result = initializeResult();
@@ -297,6 +418,59 @@ export function analyzeRouteCoverage(routeData, laneData, threshold = 15) {
     calculatePercentages(result);
     calculateSummary(result);
 
+    // 5. Analyze collisions and adjust safety rating
+    if (collisionsWithDistance.length > 0) {
+      const collisionAnalysis = analyzeCollisions(
+        collisionsWithDistance,
+        result.totalDistance
+      );
+
+      // Adjust safety rating with collision data (70% lanes, 30% collisions)
+      const laneWeight = 0.7;
+      const collisionWeight = 0.3;
+      const normalizedLaneRating = result.summary.averageSafetyRating / 3;
+
+      result.summary.collisionAdjustedRating = (
+        (normalizedLaneRating * laneWeight) +
+        (collisionAnalysis.impact.normalizedSafety * collisionWeight)
+      ) * 3;
+
+      result.summary.averageSafetyRating = result.summary.collisionAdjustedRating;
+
+      // Add collision data to result
+      result.collisions = collisionAnalysis;
+    } else {
+      // No collision data available
+      result.collisions = {
+        total: 0,
+        nearRoute: [],
+        statistics: {
+          within50m: 0,
+          within100m: 0,
+          averageDistance: 0,
+          bySeverity: {
+            noInjury: 0,
+            possibleInjury: 0,
+            minorInjury: 0,
+            seriousInjury: 0
+          },
+          byType: {},
+          riskFactors: {
+            bicycleInvolved: 0,
+            alcoholInvolved: 0,
+            phoneInvolved: 0,
+            aggressiveDriver: 0
+          }
+        },
+        impact: {
+          totalImpact: 0,
+          impactPerKm: 0,
+          normalizedSafety: 1,
+          safetyPenalty: 0
+        }
+      };
+    }
+
     return result;
 
   } catch (error) {
@@ -318,7 +492,35 @@ export function analyzeRouteCoverage(routeData, laneData, threshold = 15) {
         averageSafetyRating: 0,
         safestRoutePercentage: 0
       },
-      segments: []
+      segments: [],
+      collisions: {
+        total: 0,
+        nearRoute: [],
+        statistics: {
+          within50m: 0,
+          within100m: 0,
+          averageDistance: 0,
+          bySeverity: {
+            noInjury: 0,
+            possibleInjury: 0,
+            minorInjury: 0,
+            seriousInjury: 0
+          },
+          byType: {},
+          riskFactors: {
+            bicycleInvolved: 0,
+            alcoholInvolved: 0,
+            phoneInvolved: 0,
+            aggressiveDriver: 0
+          }
+        },
+        impact: {
+          totalImpact: 0,
+          impactPerKm: 0,
+          normalizedSafety: 0,
+          safetyPenalty: 0
+        }
+      }
     };
   }
 }

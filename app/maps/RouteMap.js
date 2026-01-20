@@ -6,6 +6,7 @@ import L from 'leaflet';
 import '../../src/utils/leafletConfig.js'
 import { originIcon, destIcon } from '../../src/utils/customMarkers.js';
 import { decodePolyline } from '../../src/utils/polylineDecoder';
+import { createCollisionIcon, getCollisionOpacity } from '../../src/utils/collisionMarkers';
 
 const GRCOORDS = [42.9613607, -85.6678049]
 
@@ -35,7 +36,7 @@ function MapController({ markers, route, routeCoordinates }) {
   return null;
 }
 
-export default function MapTesting({ borderRadius, markers = {}, route = {}, lanes = [] }) {
+export default function MapTesting({ borderRadius, markers = {}, route = {}, lanes = [], collisions = null, collisionFilters = {} }) {
   const position = GRCOORDS
 
   // Decode the geometry polyline if it exists
@@ -120,6 +121,57 @@ export default function MapTesting({ borderRadius, markers = {}, route = {}, lan
           opacity={0.7}
         />
       )}
+
+      {/* Render collision markers */}
+      {collisionFilters.showCollisions && collisions && collisions.nearRoute && collisions.nearRoute
+        .filter(collision => {
+          // Apply filters
+          if (collisionFilters.maxDistance && collision.distance > collisionFilters.maxDistance) {
+            return false;
+          }
+          if (collisionFilters.minSeverity !== undefined && collision.injuryRating < collisionFilters.minSeverity) {
+            return false;
+          }
+          if (collisionFilters.maxSafetyRating !== undefined && collision.safetyRating > collisionFilters.maxSafetyRating) {
+            return false;
+          }
+          if (collisionFilters.bicycleOnly && !collision.bicycleInvolved) {
+            return false;
+          }
+          return true;
+        })
+        .map((collision) => {
+          const position = [collision.location.lat, collision.location.lng];
+          const icon = createCollisionIcon(collision);
+          const opacity = getCollisionOpacity(collision.distance);
+
+          return (
+            <Marker
+              key={`collision-${collision.id}`}
+              position={position}
+              icon={icon}
+              opacity={opacity}
+            >
+              <Popup>
+                <div style={{fontSize: '12px'}}>
+                  <strong>{collision.type}</strong><br/>
+                  <strong>Severity:</strong> {collision.severity}<br/>
+                  <strong>Date:</strong> {new Date(collision.date).toLocaleDateString()}<br/>
+                  <strong>Location:</strong> {collision.location_description}<br/>
+                  <strong>Distance from route:</strong> {collision.distance.toFixed(0)}m<br/>
+                  {collision.bicycleInvolved && <span style={{color: '#dc2626'}}>⚠️ Bicycle Involved</span>}
+                  {collision.bicycleInvolved && <br/>}
+                  {collision.alcoholInvolved && <span style={{color: '#dc2626'}}>⚠️ Alcohol Involved</span>}
+                  {collision.alcoholInvolved && <br/>}
+                  {collision.phoneInvolved && <span style={{color: '#dc2626'}}>⚠️ Phone Involved</span>}
+                  {collision.phoneInvolved && <br/>}
+                  {collision.aggressiveDriverInvolved && <span style={{color: '#dc2626'}}>⚠️ Aggressive Driving</span>}
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })
+      }
 
       {/* Conditional marker rendering */}
       {markers.origin && (
