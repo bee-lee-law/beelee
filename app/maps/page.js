@@ -37,6 +37,10 @@ async function getDirections(userInput) {
 
   async function getLanes(city = 'Grand Rapids') {
     const url = `${process.env.NEXT_PUBLIC_API_URL}/infrastructure/bike-lanes?city=${encodeURIComponent(city)}`;
+    for(var i=0; i<locationList.length; i++){
+      console.log(locationList[i].loc_name);
+      console.log(`${locationList[i].lat},${locationList[i].lng}`);
+    }
 
     // Create an AbortController for timeout
     const controller = new AbortController();
@@ -342,6 +346,9 @@ export default function Home() {
     showCollisions: true
   });
 
+  // Help overlay state
+  const [showHelp, setShowHelp] = useState(false);
+
   // Run route analysis when route, lane, and collision data are available
   useEffect(() => {
     if (routeData?.routes && laneData?.data?.bikeLanes) {
@@ -359,29 +366,28 @@ export default function Home() {
   }, [routeData, laneData, collisionData]);
 
   const pageLayoutStyle = {
-    position: 'relative',
-    display: 'flex',
-    flexDirection: 'column',
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100vw',
+    height: '100vh',
     background: 'black',
     overflow: 'hidden',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: screenSizeRef.current.width,
-    height: screenSizeRef.current.height,
-    borderRadius: screenSizeRef.current.radius,
   }
 
   if (!mounted) {
     return (
       <div style={{
-        width: '600px',
-        height: '700px',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         background: '#1a1a1a',
         color: '#fff5e4',
-        borderRadius: '20px'
       }}>
         Loading...
       </div>
@@ -389,47 +395,47 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6">
-      <main className="max-w-2xl w-full">
-        <div style={pageLayoutStyle}>
-            <RouteMap
-              borderRadius={screenSizeRef.current.radius}
-              markers={userInput}
-              route={routeData}
-              lanes={laneData}
-              collisions={routeAnalysis?.collisions}
-              collisionFilters={collisionFilters}
-            />
-            <InputBar
-              searchMode={searchMode}
-              searchQuery={searchQuery}
-              suggestions={suggestions}
-              isLoadingLookup={isLoadingLookup}
-              onSearchChange={handleSearchInput}
-              onSuggestionClick={handleLocationSelect}
-              onModeToggle={handleModeToggle}
-              onReset={handleReset}
-              randomize={randomize}
-              userInput={userInput}
-              routeData={routeData}
-              isLoadingRoute={isLoadingRoute}
-              laneData={laneData}
-              isLoadingLanes={isLoadingLanes}
-            />
-            <OutputBar
-              containerHeight={screenSizeRef.current.height}
-              userInput={userInput}
-              routeAnalysis={routeAnalysis}
-              collisionFilters={collisionFilters}
-              setCollisionFilters={setCollisionFilters}
-            />
-        </div>
-      </main>
+    <div style={pageLayoutStyle}>
+      <RouteMap
+        borderRadius={0}
+        markers={userInput}
+        route={routeData}
+        lanes={laneData}
+        collisions={routeAnalysis?.collisions}
+        collisionFilters={collisionFilters}
+      />
+      <InputBar
+        isMobile={isMobile}
+        searchMode={searchMode}
+        searchQuery={searchQuery}
+        suggestions={suggestions}
+        isLoadingLookup={isLoadingLookup}
+        onSearchChange={handleSearchInput}
+        onSuggestionClick={handleLocationSelect}
+        onModeToggle={handleModeToggle}
+        onReset={handleReset}
+        randomize={randomize}
+        onHelpClick={() => setShowHelp(true)}
+        userInput={userInput}
+        routeData={routeData}
+        isLoadingRoute={isLoadingRoute}
+        laneData={laneData}
+        isLoadingLanes={isLoadingLanes}
+      />
+      <OutputBar
+        isMobile={isMobile}
+        userInput={userInput}
+        routeAnalysis={routeAnalysis}
+        collisionFilters={collisionFilters}
+        setCollisionFilters={setCollisionFilters}
+      />
+      {showHelp && <HelpOverlay onClose={() => setShowHelp(false)} />}
     </div>
   );
 }
 
 function InputBar({
+  isMobile,
   searchMode,
   searchQuery,
   suggestions,
@@ -439,6 +445,7 @@ function InputBar({
   onModeToggle,
   onReset,
   randomize,
+  onHelpClick,
   userInput,
   routeData,
   isLoadingRoute,
@@ -466,19 +473,35 @@ function InputBar({
     return 'Route found';
   }
 
-  const barStyle = {
-    position: 'absolute',
+  const barStyle = isMobile ? {
+    // Mobile: Full width at top, two rows
+    position: 'fixed',
     top: 0,
     left: 0,
     right: 0,
     fontSize: '14px',
     display: 'flex',
+    flexDirection: 'column',
+    background: 'rgba(0, 0, 0, 0.85)',
+    padding: '10px',
+    zIndex: 1000,
+  } : {
+    // Desktop: Top-left floating panel
+    position: 'fixed',
+    top: 15,
+    left: 15,
+    width: 'calc(50vw - 30px)',
+    maxWidth: '600px',
+    fontSize: '14px',
+    display: 'flex',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    background: 'rgba(0, 0, 0, 0.7)',
-    padding: '10px',
+    background: 'rgba(0, 0, 0, 0.85)',
+    padding: '12px 15px',
     zIndex: 1000,
+    borderRadius: '12px',
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
   }
 
   const modeButtonStyle = {
@@ -535,112 +558,155 @@ function InputBar({
 
   return(
     <div style={barStyle}>
-      <button
-        style={{
-          ...modeButtonStyle,
-          opacity: isRouteFound ? 0.5 : 1,
-          cursor: isRouteFound ? 'not-allowed' : 'pointer',
-        }}
-        onClick={onModeToggle}
-        disabled={isRouteFound}
-      >
-        {searchMode === 'origin' ? '🔵 Origin' : '🟢 Destination'}
-      </button>
+      {/* Row 1: Controls */}
+      <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%'}}>
+        <button
+          style={{
+            ...modeButtonStyle,
+            opacity: isRouteFound ? 0.5 : 1,
+            cursor: isRouteFound ? 'not-allowed' : 'pointer',
+          }}
+          onClick={onModeToggle}
+          disabled={isRouteFound}
+        >
+          {searchMode === 'origin' ? '🔵 Start' : '🟢 End'}
+        </button>
 
-      <div style={inBoxContainerStyle}>
-        <div style={{
-          ...inBoxStyle,
-          opacity: isRouteFound ? 0.5 : 1,
-          cursor: isRouteFound ? 'not-allowed' : 'text',
-        }}>
-          <input
-            ref={inputRef}
-            style={{
-              paddingLeft: '10px',
-              height: '100%',
-              outline: 'none',
-              border: 'none',
-              background: 'transparent',
-              flex: 1,
-              cursor: isRouteFound ? 'not-allowed' : 'text',
-            }}
-            type='text'
-            placeholder={isRouteFound ? 'Route locked - reset to search again' : `Search for ${searchMode}...`}
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            disabled={isRouteFound}
-          />
-          {isLoadingLookup ? '⏳' : '🔍'}
+        <div style={inBoxContainerStyle}>
+          <div style={{
+            ...inBoxStyle,
+            opacity: isRouteFound ? 0.5 : 1,
+            cursor: isRouteFound ? 'not-allowed' : 'text',
+          }}>
+            <input
+              ref={inputRef}
+              style={{
+                paddingLeft: '10px',
+                height: '100%',
+                outline: 'none',
+                border: 'none',
+                background: 'transparent',
+                flex: 1,
+                cursor: isRouteFound ? 'not-allowed' : 'text',
+              }}
+              type='text'
+              placeholder={isRouteFound ? 'Reset to search again' : `Search for ${searchMode}...`}
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              disabled={isRouteFound}
+            />
+            {isLoadingLookup ? '⏳' : '🔍'}
+          </div>
+
+          {/* Autocomplete dropdown */}
+          {suggestions.length > 0 && (
+            <div style={dropdownStyle}>
+              {suggestions.map((suggestion, index) => (
+                <div
+                  key={index}
+                  style={suggestionItemStyle}
+                  onClick={() => onSuggestionClick(suggestion)}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(100, 100, 100, 0.5)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                >
+                  {suggestion.display_name}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Autocomplete dropdown */}
-        {suggestions.length > 0 && (
-          <div style={dropdownStyle}>
-            {suggestions.map((suggestion, index) => (
-              <div
-                key={index}
-                style={suggestionItemStyle}
-                onClick={() => onSuggestionClick(suggestion)}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(100, 100, 100, 0.5)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-              >
-                {suggestion.display_name}
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Desktop: hint text inline */}
+        {!isMobile && <div style={{color: '#fff', fontSize: '12px', marginRight: '10px', whiteSpace: 'nowrap'}}>{getHintText()}</div>}
+
+        <div style={{display: 'flex', gap: '8px', flexShrink: 0}}>
+          <button
+            style={{
+              background: 'linear-gradient(180deg, rgba(240, 240, 240, 0.9) 0%, rgba(200, 200, 200, 0.9) 100%)',
+              border: '1px solid rgba(0, 0, 0, 0.3)',
+              borderRadius: '6px',
+              padding: '2px 6px',
+              cursor: 'pointer',
+              fontSize: '18px',
+              lineHeight: 1,
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+              transition: 'all 0.15s ease',
+            }}
+            onClick={randomize}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+            title="Random locations"
+          >
+            &#127922;
+          </button>
+          <button
+            style={{
+              background: 'linear-gradient(180deg, rgba(240, 240, 240, 0.9) 0%, rgba(200, 200, 200, 0.9) 100%)',
+              border: '1px solid rgba(0, 0, 0, 0.3)',
+              borderRadius: '6px',
+              padding: '2px 6px',
+              cursor: 'pointer',
+              fontSize: '18px',
+              lineHeight: 1,
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+              transition: 'all 0.15s ease',
+            }}
+            onClick={onReset}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+            title="Reset"
+          >
+            ↻
+          </button>
+          <button
+            style={{
+              background: 'linear-gradient(180deg, rgba(240, 240, 240, 0.9) 0%, rgba(200, 200, 200, 0.9) 100%)',
+              border: '1px solid rgba(0, 0, 0, 0.3)',
+              borderRadius: '6px',
+              padding: '2px 6px',
+              cursor: 'pointer',
+              fontSize: '18px',
+              lineHeight: 1,
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+              transition: 'all 0.15s ease',
+            }}
+            onClick={onHelpClick}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+            title="Help"
+          >
+            ?
+          </button>
+        </div>
       </div>
 
-      <div style={{color: '#fff', fontSize: '12px', marginRight: '10px'}}>{getHintText()}</div>
-      <div style={{display: 'flex', gap: '8px'}}>
-        <button
-          style={{
-            background: 'linear-gradient(180deg, rgba(240, 240, 240, 0.9) 0%, rgba(200, 200, 200, 0.9) 100%)',
-            border: '1px solid rgba(0, 0, 0, 0.3)',
-            borderRadius: '6px',
-            padding: '2px 6px',
-            cursor: 'pointer',
-            fontSize: '18px',
-            lineHeight: 1,
-            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
-            transition: 'all 0.15s ease',
-          }}
-          onClick={randomize}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-          title="Random locations"
-        >
-          &#127922;
-        </button>
-        <button
-          style={{
-            background: 'linear-gradient(180deg, rgba(240, 240, 240, 0.9) 0%, rgba(200, 200, 200, 0.9) 100%)',
-            border: '1px solid rgba(0, 0, 0, 0.3)',
-            borderRadius: '6px',
-            padding: '2px 6px',
-            cursor: 'pointer',
-            fontSize: '18px',
-            lineHeight: 1,
-            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
-            transition: 'all 0.15s ease',
-          }}
-          onClick={onReset}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-          title="Reset"
-        >
-          ↻
-        </button>
-      </div>
+      {/* Row 2: Mobile hint text */}
+      {isMobile && (
+        <div style={{color: '#fff', fontSize: '12px', marginTop: '8px', textAlign: 'center'}}>
+          {getHintText()}
+        </div>
+      )}
     </div>
   )
 }
 
-function OutputBar({ containerHeight, userInput, routeAnalysis, collisionFilters, setCollisionFilters }) {
+function OutputBar({ isMobile, userInput, routeAnalysis, collisionFilters, setCollisionFilters }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [showCoverageBreakdown, setShowCoverageBreakdown] = useState(false);
   const [showCollisionBreakdown, setShowCollisionBreakdown] = useState(false);
   const heightPercent = isExpanded ? 50 : 15;
+
+  // Auto-expand when analysis is found
+  useEffect(() => {
+    if (routeAnalysis && !routeAnalysis.error) {
+      if (isMobile) {
+        setIsExpanded(true);
+      } else {
+        setIsPanelOpen(true);
+      }
+    }
+  }, [routeAnalysis, isMobile]);
 
   const toggleHeight = () => {
     setIsExpanded(!isExpanded);
@@ -690,29 +756,47 @@ function OutputBar({ containerHeight, userInput, routeAnalysis, collisionFilters
     return <span style={{ color, fontWeight: 'bold' }}>&nbsp;{grade}&nbsp;</span>;
   }
 
-  const barStyle = {
-    position: 'absolute',
+  const barStyle = isMobile ? {
+    // Mobile: Bottom sheet
+    position: 'fixed',
     bottom: 0,
     left: 0,
     right: 0,
     height: `${heightPercent}%`,
-    background: 'rgba(0, 0, 0, 0.7)',
+    background: 'rgba(0, 0, 0, 0.85)',
     color: '#fff',
     zIndex: 1000,
     display: 'flex',
     flexDirection: 'column',
     transition: 'height 0.3s ease',
+    borderRadius: '20px 20px 0 0',
+  } : {
+    // Desktop: Right side panel
+    position: 'fixed',
+    top: 15,
+    right: isPanelOpen ? 15 : -420,
+    bottom: 15,
+    width: '400px',
+    background: 'rgba(0, 0, 0, 0.85)',
+    color: '#fff',
+    zIndex: 1000,
+    display: 'flex',
+    flexDirection: 'column',
+    transition: 'right 0.3s ease',
+    borderRadius: '12px',
+    boxShadow: '-4px 0 20px rgba(0, 0, 0, 0.3)',
   };
 
   const handleStyle = {
     width: '100%',
-    height: '20px',
+    height: '25px',
     background: 'rgba(100, 100, 100, 0.3)',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     userSelect: 'none',
+    borderRadius: '20px 20px 0 0',
   };
 
   const contentStyle = {
@@ -721,23 +805,85 @@ function OutputBar({ containerHeight, userInput, routeAnalysis, collisionFilters
     fontSize: '13px',
   };
 
+  // Desktop toggle button
+  const desktopToggleButton = !isMobile && (
+    <button
+      onClick={() => setIsPanelOpen(!isPanelOpen)}
+      style={{
+        position: 'fixed',
+        top: '50%',
+        right: isPanelOpen ? 430 : 15,
+        transform: 'translateY(-50%)',
+        width: '36px',
+        height: '80px',
+        background: 'rgba(0, 0, 0, 0.85)',
+        border: 'none',
+        borderRadius: '8px 0 0 8px',
+        color: '#fff',
+        cursor: 'pointer',
+        zIndex: 999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '16px',
+        transition: 'right 0.3s ease',
+        boxShadow: '-2px 0 10px rgba(0, 0, 0, 0.3)',
+      }}
+    >
+      {isPanelOpen ? '>' : '<'}
+    </button>
+  );
+
   return (
-    <div style={barStyle}>
-      <div
-        style={handleStyle}
-        onClick={toggleHeight}
-      >
-        {isExpanded ? '▼' : '▲'}
-      </div>
-      <div style={{...contentStyle, overflowY: isExpanded ? 'auto' : 'hidden'}}>
-        <div style={{fontSize: '16px', fontWeight: 'bold', textAlign: 'right', overflow: isExpanded ? 'inherit' : 'hidden'}}>Route Safety Analysis</div>
-        <hr />
-        {!isExpanded ? (
-          // Collapsed view - show summary
-          <div style={{fontSize: '14px', fontWeight: 'bold'}}>
-            {getSummaryText()}
+    <>
+      {desktopToggleButton}
+      <div style={barStyle}>
+        {/* Mobile: Drag handle */}
+        {isMobile && (
+          <div style={handleStyle} onClick={toggleHeight}>
+            {isExpanded ? '▼' : '▲'}
           </div>
-        ) : (
+        )}
+
+        {/* Desktop: Header with close button */}
+        {!isMobile && (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '15px',
+            borderBottom: '1px solid rgba(255,255,255,0.1)',
+          }}>
+            <span style={{fontSize: '16px', fontWeight: 'bold'}}>Route Safety Analysis</span>
+            <button
+              onClick={() => setIsPanelOpen(false)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#fff',
+                fontSize: '20px',
+                cursor: 'pointer',
+                padding: '0 5px',
+              }}
+            >
+              &times;
+            </button>
+          </div>
+        )}
+
+        <div style={{...contentStyle, overflowY: (isMobile && isExpanded) || !isMobile ? 'auto' : 'hidden'}}>
+          {isMobile && (
+            <>
+              <div style={{fontSize: '16px', fontWeight: 'bold', textAlign: 'right', overflow: isExpanded ? 'inherit' : 'hidden'}}>Route Safety Analysis</div>
+              <hr />
+            </>
+          )}
+          {isMobile && !isExpanded ? (
+            // Mobile collapsed view - show summary
+            <div style={{fontSize: '14px', fontWeight: 'bold'}}>
+              {getSummaryText()}
+            </div>
+          ) : (
           // Expanded view - show detailed information
           <div>
             {/* Route Coverage Analysis */}
@@ -746,7 +892,7 @@ function OutputBar({ containerHeight, userInput, routeAnalysis, collisionFilters
               <div style={{fontSize: '14px', fontWeight: 'bold'}}>
                 {getSummaryText()}
                 <br/>
-                <h4 style={{marginBottom: '10px', marginTop: '5px', fontSize: '14px', fontWeight: 'bold', display: 'flex', alignItems: 'center'}}>Overall Safety Rating: {getSafetyRating(routeAnalysis.summary.collisionAdjustedRating)} ({routeAnalysis.summary.collisionAdjustedRating.toFixed(2)})</h4>
+                <h4 style={{marginBottom: '10px', marginTop: '5px', fontSize: '14px', fontWeight: 'bold', display: 'flex', alignItems: 'center'}}>Overall Safety Rating: {getSafetyRating(routeAnalysis.summary.collisionAdjustedRating)} ({routeAnalysis.summary.collisionAdjustedRating?.toFixed(2)})</h4>
               </div>
               <div style={{marginTop: '10px', paddingTop: '20px', borderTop: '1px solid #444'}}>
                 <h3 style={{marginTop: 0, fontSize: '16px', textAlign: 'right'}}>Coverage Analysis</h3>
@@ -933,6 +1079,99 @@ function OutputBar({ containerHeight, userInput, routeAnalysis, collisionFilters
             )}
           </div>
         )}
+      </div>
+    </div>
+    </>
+  );
+}
+
+function HelpOverlay({ onClose }) {
+  const backdropStyle = {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0, 0, 0, 0.75)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2000,
+  };
+
+  const modalStyle = {
+    background: 'rgba(30, 30, 30, 0.95)',
+    borderRadius: '16px',
+    padding: '24px',
+    maxWidth: '600px',
+    width: '90%',
+    maxHeight: '80vh',
+    overflow: 'auto',
+    color: '#fff',
+    position: 'relative',
+    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+  };
+
+  const closeButtonStyle = {
+    position: 'absolute',
+    top: '12px',
+    right: '12px',
+    background: 'none',
+    border: 'none',
+    color: '#fff',
+    fontSize: '24px',
+    cursor: 'pointer',
+    padding: '4px 8px',
+    lineHeight: 1,
+  };
+
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  return (
+    <div style={backdropStyle} onClick={handleBackdropClick}>
+      <div style={modalStyle}>
+        <button style={closeButtonStyle} onClick={onClose}>&times;</button>
+
+        <h1 style={{marginTop: 0, marginBottom: '16px', fontSize: '24px'}}>Bike Route Safety Analyzer</h1>
+
+        <section style={{marginBottom: '20px'}}>
+          <h2 style={{fontSize: '18px', marginBottom: '8px', color: '#4ade80'}}>About</h2>
+          <p style={{fontSize: '14px', lineHeight: 1.6, margin: 0}}>
+            This tool helps cyclists find safer routes by analyzing bike infrastructure coverage
+            and historical collision data along your route. These safety ratings are backed by data,
+            but they ARE subjective. Take them with a grain of salt.
+          </p>
+        </section>
+
+        <section style={{marginBottom: '20px'}}>
+          <h2 style={{fontSize: '18px', marginBottom: '8px', color: '#4ade80'}}>How to Use</h2>
+          <ul style={{fontSize: '14px', lineHeight: 1.8, margin: 0, paddingLeft: '20px'}}>
+            <li>Enter a start and end location, or click 🎲 for random locations (from a list I generated of some cool spots in Grand Rapids)</li>
+            <li>View the route on the map with color-coded bike infrastructure and reported traffic collisions within the last year</li>
+            <li>Check the safety analysis panel for detailed coverage breakdown</li>
+            <li>Click ↻ to reset and search for a new route</li>
+          </ul>
+        </section>
+
+        <section style={{marginBottom: '20px'}}>
+          <h2 style={{fontSize: '18px', marginBottom: '8px', color: '#4ade80'}}>Data Sources</h2>
+          <ul style={{fontSize: '14px', lineHeight: 1.8, margin: 0, paddingLeft: '20px'}}>
+            <li>Bike Infrastructure data: <a style={{color: "rgb(133, 145, 212)"}} href="https://overpass-api.de/">Overpass API</a></li>
+            <li>Collision data: <a style={{color: "rgb(133, 145, 212)"}} href="https://grpd-grandrapids.hub.arcgis.com/">GRPD ARCGIS</a></li>
+            <li>Routing: <a style={{color: "rgb(133, 145, 212)"}} href="https://www.mapbox.com/">Mapbox</a></li>
+            <li>Maps: <a style={{color: "rgb(133, 145, 212)"}} href="https://www.openstreetmap.org/">OpenStreetMap</a></li>
+          </ul>
+        </section>
+
+        <section>
+          <p style={{fontSize: '14px', lineHeight: 1.6, margin: 0}}>
+            Built by Brandon Lawrence. Data currently available for Grand Rapids, MI only.
+          </p>
+        </section>
       </div>
     </div>
   );
