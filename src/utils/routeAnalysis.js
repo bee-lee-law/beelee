@@ -204,12 +204,12 @@ function calculateSummary(result) {
 
   // Calculate weighted average safety rating
   const weightedSum =
-    (result.coverage.rating3.distance * 3) +
-    (result.coverage.rating2.distance * 2) +
-    (result.coverage.rating1.distance * 1);
+    (result.coverage.rating3.distance * 1) +
+    (result.coverage.rating2.distance * .8) +
+    (result.coverage.rating1.distance * .5);
 
   result.summary.averageSafetyRating = totalCovered > 0
-    ? weightedSum / totalCovered
+    ? weightedSum / result.totalDistance
     : 0;
 
   result.summary.safestRoutePercentage = result.coverage.rating3.percentage;
@@ -278,6 +278,7 @@ function calculateCollisionImpact(collision, distance) {
  * @returns {Object} Collision analysis results
  */
 function analyzeCollisions(collisions, routeDistance) {
+  const collisionWeight = 0.3;
   const nearRoute = collisions.filter(c => c.distance <= 100);
 
   const statistics = {
@@ -288,22 +289,22 @@ function analyzeCollisions(collisions, routeDistance) {
       : 0,
 
     bySeverity: {
-      noInjury: collisions.filter(c => c.injuryRating === 0).length,
-      possibleInjury: collisions.filter(c => c.injuryRating === 1).length,
-      minorInjury: collisions.filter(c => c.injuryRating === 2).length,
-      seriousInjury: collisions.filter(c => c.injuryRating === 3).length
+      noInjury: nearRoute.filter(c => c.injuryRating === 0).length,
+      possibleInjury: nearRoute.filter(c => c.injuryRating === 1).length,
+      minorInjury: nearRoute.filter(c => c.injuryRating === 2).length,
+      seriousInjury: nearRoute.filter(c => c.injuryRating === 3).length
     },
 
-    byType: collisions.reduce((acc, c) => {
+    byType: nearRoute.reduce((acc, c) => {
       acc[c.type] = (acc[c.type] || 0) + 1;
       return acc;
     }, {}),
 
     riskFactors: {
-      bicycleInvolved: collisions.filter(c => c.bicycleInvolved).length,
-      alcoholInvolved: collisions.filter(c => c.alcoholInvolved).length,
-      phoneInvolved: collisions.filter(c => c.phoneInvolved).length,
-      aggressiveDriver: collisions.filter(c => c.aggressiveDriverInvolved).length
+      bicycleInvolved: nearRoute.filter(c => c.bicycleInvolved).length,
+      alcoholInvolved: nearRoute.filter(c => c.alcoholInvolved).length,
+      phoneInvolved: nearRoute.filter(c => c.phoneInvolved).length,
+      aggressiveDriver: nearRoute.filter(c => c.aggressiveDriverInvolved).length
     }
   };
 
@@ -324,8 +325,8 @@ function analyzeCollisions(collisions, routeDistance) {
     impact: {
       totalImpact,
       impactPerKm,
-      normalizedSafety: normalizedCollisionSafety,
-      safetyPenalty: normalizedCollisionSafety - 1
+      normalizedSafety: normalizedCollisionSafety*collisionWeight,
+      safetyPenalty: (normalizedCollisionSafety - 1)*collisionWeight
     }
   };
 }
@@ -429,14 +430,13 @@ export function analyzeRouteCoverage(routeData, laneData, collisionData = null, 
       const laneWeight = 0.7;
       const collisionWeight = 0.3;
       const normalizedLaneRating = result.summary.averageSafetyRating / 3;
-
+      /*
       result.summary.collisionAdjustedRating = (
         (normalizedLaneRating * laneWeight) +
         (collisionAnalysis.impact.normalizedSafety * collisionWeight)
       ) * 3;
-
-      result.summary.averageSafetyRating = result.summary.collisionAdjustedRating;
-
+      */
+     result.summary.collisionAdjustedRating = result.summary.averageSafetyRating + (collisionAnalysis.impact.safetyPenalty)*collisionWeight;
       // Add collision data to result
       result.collisions = collisionAnalysis;
     } else {

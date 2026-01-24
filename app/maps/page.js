@@ -7,8 +7,13 @@ import 'leaflet/dist/leaflet.css';
 import { geocodeLocation } from '@/src/utils/geocoding';
 import { analyzeRouteCoverage } from '@/src/utils/routeAnalysis';
 import { decodePolyline } from '../../src/utils/polylineDecoder';
+import { locationList } from '@/src/utils/locationList';
 
 // Dynamically import the map component with SSR disabled to avoid "window is not defined" error
+
+
+
+
 const RouteMap = dynamic(() => import('./RouteMap'), {
   ssr: false,
   loading: () => <div style={{ height: '400px', width: '80%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>Loading map...</div>
@@ -70,8 +75,9 @@ async function getDirections(userInput) {
     let lats = coords.map((coord)=>coord[0]);
     let xmin = String(Math.min(...longs));
     let ymin = String(Math.min(...lats));
-    let xmax = String(Math.min(...longs));
-    let ymax = String(Math.min(...lats));
+    let xmax = String(Math.max(...longs));
+    let ymax = String(Math.max(...lats));
+    console.log(xmin + ',' + ymin + ',' + xmax + ',' + ymax);
     return xmin + ',' + ymin + ',' + xmax + ',' + ymax;
   }
 
@@ -238,11 +244,42 @@ export default function Home() {
     setRouteData([]);
     setIsLoadingCollisions(false);
     setCollisionData({});
+    setRouteAnalysis(null);
     if(laneData.error){
       setLaneData([])
       setIsLoadingLanes(false);
     }
   };
+
+  const randomize = () => {
+    const index1 = Math.floor(Math.random() * locationList.length);
+    let index2 = Math.floor(Math.random() * locationList.length);
+    while (index2 === index1) {
+      index2 = Math.floor(Math.random() * locationList.length);
+    }
+    const location1 = locationList[index1];
+    const location2 = locationList[index2];
+
+    setRouteData([]);
+    setCollisionData({});
+    setRouteAnalysis(null);
+    setIsLoadingRoute(false);
+    setIsLoadingCollisions(false);
+    setUserInput({
+      origin: {
+        lat: parseFloat(location1.lat),
+        lng: parseFloat(location1.lng),
+        loc_name: location1.loc_name,
+        address: location1.address || {}
+      },
+      destination: {
+        lat: parseFloat(location2.lat),
+        lng: parseFloat(location2.lng),
+        loc_name: location2.loc_name,
+        address: location2.address || {}
+      }
+    });
+  }
 
   // Fetch lane data
   const [isLoadingLanes, setIsLoadingLanes] = useState(false);
@@ -372,6 +409,7 @@ export default function Home() {
               onSuggestionClick={handleLocationSelect}
               onModeToggle={handleModeToggle}
               onReset={handleReset}
+              randomize={randomize}
               userInput={userInput}
               routeData={routeData}
               isLoadingRoute={isLoadingRoute}
@@ -400,6 +438,7 @@ function InputBar({
   onSuggestionClick,
   onModeToggle,
   onReset,
+  randomize,
   userInput,
   routeData,
   isLoadingRoute,
@@ -415,12 +454,15 @@ function InputBar({
     }
   }, [searchMode]);
 
+  const isRouteFound = routeData?.routes?.length > 0;
+
   const getHintText = () => {
-    if(laneData.error)return laneData.error
+    if(laneData.error) return laneData.error
     if(isLoadingLanes && laneData.length === 0) return 'Fetching bike lanes'
     else if(searchMode === 'origin' && !userInput.origin) return 'Selecting Origin'
     else if(searchMode === 'destination' && !userInput.destination) return 'Selecting Destination'
     else if(isLoadingRoute && !routeData) return 'Calculating Route'
+    else if(isRouteFound) return 'Click 🎲 or ↻ to search again'
     return 'Route found';
   }
 
@@ -493,19 +535,40 @@ function InputBar({
 
   return(
     <div style={barStyle}>
-      <button style={modeButtonStyle} onClick={onModeToggle}>
+      <button
+        style={{
+          ...modeButtonStyle,
+          opacity: isRouteFound ? 0.5 : 1,
+          cursor: isRouteFound ? 'not-allowed' : 'pointer',
+        }}
+        onClick={onModeToggle}
+        disabled={isRouteFound}
+      >
         {searchMode === 'origin' ? '🔵 Origin' : '🟢 Destination'}
       </button>
 
       <div style={inBoxContainerStyle}>
-        <div style={inBoxStyle}>
+        <div style={{
+          ...inBoxStyle,
+          opacity: isRouteFound ? 0.5 : 1,
+          cursor: isRouteFound ? 'not-allowed' : 'text',
+        }}>
           <input
             ref={inputRef}
-            style={{paddingLeft: '10px', height: '100%', outline: 'none', border: 'none', background: 'transparent', flex: 1}}
+            style={{
+              paddingLeft: '10px',
+              height: '100%',
+              outline: 'none',
+              border: 'none',
+              background: 'transparent',
+              flex: 1,
+              cursor: isRouteFound ? 'not-allowed' : 'text',
+            }}
             type='text'
-            placeholder={`Search for ${searchMode}...`}
+            placeholder={isRouteFound ? 'Route locked - reset to search again' : `Search for ${searchMode}...`}
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
+            disabled={isRouteFound}
           />
           {isLoadingLookup ? '⏳' : '🔍'}
         </div>
@@ -529,25 +592,54 @@ function InputBar({
       </div>
 
       <div style={{color: '#fff', fontSize: '12px', marginRight: '10px'}}>{getHintText()}</div>
-
-      <button
-        style={{
-          background: 'rgba(200, 200, 200, 0.7)',
-          border: '1px solid black',
-          borderRadius: '10px',
-          padding: '5px 10px',
-          cursor: 'pointer',
-        }}
-        onClick={onReset}
-      >
-        ↻
-      </button>
+      <div style={{display: 'flex', gap: '8px'}}>
+        <button
+          style={{
+            background: 'linear-gradient(180deg, rgba(240, 240, 240, 0.9) 0%, rgba(200, 200, 200, 0.9) 100%)',
+            border: '1px solid rgba(0, 0, 0, 0.3)',
+            borderRadius: '6px',
+            padding: '2px 6px',
+            cursor: 'pointer',
+            fontSize: '18px',
+            lineHeight: 1,
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+            transition: 'all 0.15s ease',
+          }}
+          onClick={randomize}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+          title="Random locations"
+        >
+          &#127922;
+        </button>
+        <button
+          style={{
+            background: 'linear-gradient(180deg, rgba(240, 240, 240, 0.9) 0%, rgba(200, 200, 200, 0.9) 100%)',
+            border: '1px solid rgba(0, 0, 0, 0.3)',
+            borderRadius: '6px',
+            padding: '2px 6px',
+            cursor: 'pointer',
+            fontSize: '18px',
+            lineHeight: 1,
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+            transition: 'all 0.15s ease',
+          }}
+          onClick={onReset}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+          title="Reset"
+        >
+          ↻
+        </button>
+      </div>
     </div>
   )
 }
 
 function OutputBar({ containerHeight, userInput, routeAnalysis, collisionFilters, setCollisionFilters }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showCoverageBreakdown, setShowCoverageBreakdown] = useState(false);
+  const [showCollisionBreakdown, setShowCollisionBreakdown] = useState(false);
   const heightPercent = isExpanded ? 50 : 15;
 
   const toggleHeight = () => {
@@ -557,6 +649,7 @@ function OutputBar({ containerHeight, userInput, routeAnalysis, collisionFilters
   // Helper to get address name from location getAddressName
   const getAddressName = (location) => {
     if (!location || !location.address) return 'Unknown';
+    if(location.loc_name) return location.loc_name;
     const num = location.address.house_number;
     const st = location.address.road;
     return num + ' ' + st
@@ -568,6 +661,7 @@ function OutputBar({ containerHeight, userInput, routeAnalysis, collisionFilters
 
   // Generate summary text for collapsed view
   const getSummaryText = () => {
+    console.log(userInput);
     if(userInput.origin && userInput.origin.address && getCity(userInput.origin.address) != 'Grand Rapids') {
       return `Warning: Bike Lane and Traffic data not available outside of Grand Rapids`
     } else if (userInput.origin && userInput.destination) {
@@ -579,6 +673,22 @@ function OutputBar({ containerHeight, userInput, routeAnalysis, collisionFilters
     }
     return 'No locations selected';
   };
+
+  const getSafetyRating = (inRating) => {
+    let grade, color;
+    if(inRating < .1) { grade = "F"; color = "#b91c1c"; }
+    else if(inRating < .2) { grade = "D"; color = "#dc2626"; }
+    else if(inRating < .3) { grade = "C-"; color = "#ea580c"; }
+    else if(inRating < .4) { grade = "C"; color = "#f97316"; }
+    else if(inRating < .5) { grade = "C+"; color = "#fb923c"; }
+    else if(inRating < .6) { grade = "B-"; color = "#fbbf24"; }
+    else if(inRating < .7) { grade = "B"; color = "#facc15"; }
+    else if(inRating < .8) { grade = "B+"; color = "#a3e635"; }
+    else if(inRating < .85) { grade = "A-"; color = "#86efac"; }
+    else if(inRating < .9) { grade = "A"; color = "#4ade80"; }
+    else { grade = "A+"; color = "#22c55e"; }
+    return <span style={{ color, fontWeight: 'bold' }}>&nbsp;{grade}&nbsp;</span>;
+  }
 
   const barStyle = {
     position: 'absolute',
@@ -630,216 +740,188 @@ function OutputBar({ containerHeight, userInput, routeAnalysis, collisionFilters
         ) : (
           // Expanded view - show detailed information
           <div>
-            <h3 style={{marginTop: 0, marginBottom: '15px', fontSize: '16px'}}>Route Details</h3>
-
-            {userInput.origin ? (
-              <div style={{marginBottom: '20px'}}>
-                <h4 style={{color: '#60a5fa', marginBottom: '8px', fontSize: '14px'}}>🔵 Origin</h4>
-                <p style={{margin: '4px 0', fontSize: '12px'}}>{userInput.origin.display_name}</p>
-                <p style={{margin: '4px 0', color: '#aaa', fontSize: '11px'}}>
-                  Coordinates: {userInput.origin.lat.toFixed(4)}, {userInput.origin.lng.toFixed(4)}
-                </p>
-              </div>
-            ) : (
-              <div style={{marginBottom: '20px', color: '#888'}}>
-                <h4 style={{marginBottom: '8px', fontSize: '14px'}}>🔵 Origin</h4>
-                <p style={{fontSize: '12px'}}>Not selected</p>
-              </div>
-            )}
-
-            {userInput.destination ? (
-              <div>
-                <h4 style={{color: '#f87171', marginBottom: '8px', fontSize: '14px'}}>🟢 Destination</h4>
-                <p style={{margin: '4px 0', fontSize: '12px'}}>{userInput.destination.display_name}</p>
-                <p style={{margin: '4px 0', color: '#aaa', fontSize: '11px'}}>
-                  Coordinates: {userInput.destination.lat.toFixed(4)}, {userInput.destination.lng.toFixed(4)}
-                </p>
-              </div>
-            ) : (
-              <div style={{color: '#888'}}>
-                <h4 style={{marginBottom: '8px', fontSize: '14px'}}>🟢 Destination</h4>
-                <p style={{fontSize: '12px'}}>Not selected</p>
-              </div>
-            )}
-
             {/* Route Coverage Analysis */}
             {routeAnalysis && !routeAnalysis.error && (
-              <div style={{marginTop: '30px', paddingTop: '20px', borderTop: '1px solid #444'}}>
-                <h3 style={{marginTop: 0, marginBottom: '15px', fontSize: '16px'}}>Coverage Analysis</h3>
+              <>
+              <div style={{fontSize: '14px', fontWeight: 'bold'}}>
+                {getSummaryText()}
+                <br/>
+                <h4 style={{marginBottom: '10px', marginTop: '5px', fontSize: '14px', fontWeight: 'bold', display: 'flex', alignItems: 'center'}}>Overall Safety Rating: {getSafetyRating(routeAnalysis.summary.collisionAdjustedRating)} ({routeAnalysis.summary.collisionAdjustedRating.toFixed(2)})</h4>
+              </div>
+              <div style={{marginTop: '10px', paddingTop: '20px', borderTop: '1px solid #444'}}>
+                <h3 style={{marginTop: 0, fontSize: '16px', textAlign: 'right'}}>Coverage Analysis</h3>
+                <hr/>
 
                 <div style={{marginBottom: '15px'}}>
-                  <p style={{margin: '4px 0', fontSize: '13px', fontWeight: 'bold'}}>
+                  <p style={{margin: '4px 0', fontSize: '13px'}}>
                     Total Distance: {routeAnalysis.totalDistanceKm.toFixed(2)} km ({routeAnalysis.totalDistanceMiles.toFixed(2)} mi)
                   </p>
-                </div>
-
-                <h4 style={{marginBottom: '10px', fontSize: '14px'}}>Bike Lane Coverage:</h4>
-
-                <div style={{marginBottom: '8px'}}>
-                  <span style={{color: '#22c55e', fontSize: '16px'}}>●</span>
-                  <span style={{marginLeft: '8px', fontSize: '13px'}}>
-                    Safest Lanes (Rating 3): <strong>{routeAnalysis.coverage.rating3.percentage.toFixed(1)}%</strong>
-                  </span>
-                  <span style={{marginLeft: '8px', fontSize: '11px', color: '#aaa'}}>
-                    ({(routeAnalysis.coverage.rating3.distance / 1000).toFixed(2)} km)
-                  </span>
-                </div>
-
-                <div style={{marginBottom: '8px'}}>
-                  <span style={{color: '#06b6d4', fontSize: '16px'}}>●</span>
-                  <span style={{marginLeft: '8px', fontSize: '13px'}}>
-                    Good Lanes (Rating 2): <strong>{routeAnalysis.coverage.rating2.percentage.toFixed(1)}%</strong>
-                  </span>
-                  <span style={{marginLeft: '8px', fontSize: '11px', color: '#aaa'}}>
-                    ({(routeAnalysis.coverage.rating2.distance / 1000).toFixed(2)} km)
-                  </span>
-                </div>
-
-                <div style={{marginBottom: '8px'}}>
-                  <span style={{color: '#3b82f6', fontSize: '16px'}}>●</span>
-                  <span style={{marginLeft: '8px', fontSize: '13px'}}>
-                    Decent Lanes (Rating 1): <strong>{routeAnalysis.coverage.rating1.percentage.toFixed(1)}%</strong>
-                  </span>
-                  <span style={{marginLeft: '8px', fontSize: '11px', color: '#aaa'}}>
-                    ({(routeAnalysis.coverage.rating1.distance / 1000).toFixed(2)} km)
-                  </span>
-                </div>
-
-                <div style={{marginBottom: '8px'}}>
-                  <span style={{color: '#6b7280', fontSize: '16px'}}>●</span>
-                  <span style={{marginLeft: '8px', fontSize: '13px'}}>
-                    No Lane Coverage: <strong>{routeAnalysis.coverage.noLane.percentage.toFixed(1)}%</strong>
-                  </span>
-                  <span style={{marginLeft: '8px', fontSize: '11px', color: '#aaa'}}>
-                    ({(routeAnalysis.coverage.noLane.distance / 1000).toFixed(2)} km)
-                  </span>
-                </div>
-
-                <div style={{marginTop: '15px', paddingTop: '10px', borderTop: '1px solid #444'}}>
-                  <p style={{margin: '4px 0', fontSize: '13px'}}>
-                    <strong>Overall Bike Lane Coverage: {routeAnalysis.summary.totalCoveredPercentage.toFixed(1)}%</strong>
-                  </p>
-                  <p style={{margin: '4px 0', fontSize: '12px', color: '#aaa'}}>
-                    Average Safety Rating: {routeAnalysis.summary.averageSafetyRating.toFixed(2)} / 3.00
+                  <p>
+                    Bike Infra Coverage: {routeAnalysis.summary.totalCoveredPercentage.toFixed(1)}%
                   </p>
                 </div>
+                <h4 style={{marginBottom: '10px', fontSize: '14px', fontWeight: 'bold', display: 'flex', alignItems: 'center'}}>
+                  Infrastructure Rating: {routeAnalysis.summary.averageSafetyRating.toFixed(2)}
+                  <span
+                    onClick={() => setShowCoverageBreakdown(!showCoverageBreakdown)}
+                    style={{
+                      marginLeft: '10px',
+                      width: '20px',
+                      height: '20px',
+                      borderRadius: '50%',
+                      background: showCoverageBreakdown ? 'rgba(100, 100, 100, 0.8)' : 'rgba(100, 100, 100, 0.5)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      fontWeight: 'normal',
+                    }}
+                  >
+                    ?
+                  </span>
+                </h4>
+
+                {showCoverageBreakdown && (
+                  <>
+                    <div style={{marginBottom: '8px'}}>
+                      <span style={{color: '#22c55e', fontSize: '16px'}}>●</span>
+                      <span style={{marginLeft: '8px', fontSize: '13px'}}>
+                        A. Dedicated Bike Path: <strong>{routeAnalysis.coverage.rating3.percentage.toFixed(1)}%</strong>
+                      </span>
+                      <span style={{marginLeft: '8px', fontSize: '11px', color: '#aaa'}}>
+                        ({(routeAnalysis.coverage.rating3.distance / 1000).toFixed(2)} km)
+                      </span>
+                    </div>
+
+                    <div style={{marginBottom: '8px'}}>
+                      <span style={{color: '#06b6d4', fontSize: '16px'}}>●</span>
+                      <span style={{marginLeft: '8px', fontSize: '13px'}}>
+                        B. Bike Lane: <strong>{routeAnalysis.coverage.rating2.percentage.toFixed(1)}%</strong>
+                      </span>
+                      <span style={{marginLeft: '8px', fontSize: '11px', color: '#aaa'}}>
+                        ({(routeAnalysis.coverage.rating2.distance / 1000).toFixed(2)} km)
+                      </span>
+                    </div>
+
+                    <div style={{marginBottom: '8px'}}>
+                      <span style={{color: '#3b82f6', fontSize: '16px'}}>●</span>
+                      <span style={{marginLeft: '8px', fontSize: '13px'}}>
+                        C. Shared Lanes: <strong>{routeAnalysis.coverage.rating1.percentage.toFixed(1)}%</strong>
+                      </span>
+                      <span style={{marginLeft: '8px', fontSize: '11px', color: '#aaa'}}>
+                        ({(routeAnalysis.coverage.rating1.distance / 1000).toFixed(2)} km)
+                      </span>
+                    </div>
+
+                    <div style={{marginBottom: '8px'}}>
+                      <span style={{color: '#6b7280', fontSize: '16px'}}>●</span>
+                      <span style={{marginLeft: '8px', fontSize: '13px'}}>
+                        D. No Infra: <strong>{routeAnalysis.coverage.noLane.percentage.toFixed(1)}%</strong>
+                      </span>
+                      <span style={{marginLeft: '8px', fontSize: '11px', color: '#aaa'}}>
+                        ({(routeAnalysis.coverage.noLane.distance / 1000).toFixed(2)} km)
+                      </span>
+                    </div>
+                    <div style={{marginBottom: '8px'}}>
+                      <span style={{marginLeft: '8px', fontSize: '11px', color: '#aaa'}}>
+                        Safety Rating = (distanceA*1.0 + distanceB*0.8 + distanceC*0.5 + distanceD*0.0)/totalDistance
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
+              </>
             )}
 
             {/* Collision Safety Analysis */}
             {routeAnalysis?.collisions && (
               <div style={{marginTop: '30px', paddingTop: '20px', borderTop: '1px solid #444'}}>
-                <h3 style={{marginTop: 0, marginBottom: '15px', fontSize: '16px'}}>
+                <h3 style={{marginTop: 0, fontSize: '16px', textAlign: 'right'}}>
                   Traffic Collision Analysis
                 </h3>
+                <hr/>
 
                 <div style={{marginBottom: '15px'}}>
                   <p style={{margin: '4px 0', fontSize: '13px'}}>
-                    <strong>Collisions Nearby:</strong> {routeAnalysis.collisions.statistics.within100m} within 100m
+                    Collisions within 100m: {routeAnalysis.collisions.statistics.within100m}
                   </p>
-                  <p style={{margin: '4px 0', fontSize: '12px', color: '#aaa'}}>
-                    {routeAnalysis.collisions.statistics.within50m} within 50m
+                  <p>
+                    Collisions within 50m: {routeAnalysis.collisions.statistics.within50m}
                   </p>
                 </div>
-
-                <h4 style={{marginBottom: '10px', fontSize: '14px'}}>By Severity:</h4>
-                <div style={{marginBottom: '8px', fontSize: '13px'}}>
-                  <span style={{color: '#dc2626'}}>●</span> Serious Injury: {routeAnalysis.collisions.statistics.bySeverity.seriousInjury}
-                </div>
-                <div style={{marginBottom: '8px', fontSize: '13px'}}>
-                  <span style={{color: '#f97316'}}>●</span> Minor Injury: {routeAnalysis.collisions.statistics.bySeverity.minorInjury}
-                </div>
-                <div style={{marginBottom: '8px', fontSize: '13px'}}>
-                  <span style={{color: '#fbbf24'}}>●</span> Possible Injury: {routeAnalysis.collisions.statistics.bySeverity.possibleInjury}
-                </div>
-                <div style={{marginBottom: '8px', fontSize: '13px'}}>
-                  <span style={{color: '#a3a3a3'}}>●</span> No Injury: {routeAnalysis.collisions.statistics.bySeverity.noInjury}
-                </div>
-
-                <h4 style={{marginTop: '15px', marginBottom: '10px', fontSize: '14px'}}>Risk Factors:</h4>
-                {routeAnalysis.collisions.statistics.riskFactors.bicycleInvolved > 0 && (
-                  <div style={{marginBottom: '6px', fontSize: '12px'}}>
-                    ⚠️ Bicycle Involved: {routeAnalysis.collisions.statistics.riskFactors.bicycleInvolved}
+                <h4 style={{marginBottom: '10px', fontSize: '14px', fontWeight: 'bold', display: 'flex', alignItems: 'center'}}>
+                  Collision Impact: {(routeAnalysis.collisions.impact.safetyPenalty).toFixed(2)}
+                  <span
+                    onClick={() => setShowCollisionBreakdown(!showCollisionBreakdown)}
+                    style={{
+                      marginLeft: '10px',
+                      width: '20px',
+                      height: '20px',
+                      borderRadius: '50%',
+                      background: showCollisionBreakdown ? 'rgba(100, 100, 100, 0.8)' : 'rgba(100, 100, 100, 0.5)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      fontWeight: 'normal',
+                    }}
+                  >
+                    ?
+                  </span>
+                </h4>
+                {showCollisionBreakdown && (
+                  <>
+                  <h4 style={{marginBottom: '10px', fontSize: '14px'}}>By Severity:</h4>
+                  <div style={{marginBottom: '8px', fontSize: '13px'}}>
+                    <span style={{color: '#dc2626'}}>●</span> Serious Injury: {routeAnalysis.collisions.statistics.bySeverity.seriousInjury}
                   </div>
-                )}
-                {routeAnalysis.collisions.statistics.riskFactors.alcoholInvolved > 0 && (
-                  <div style={{marginBottom: '6px', fontSize: '12px'}}>
-                    ⚠️ Alcohol Involved: {routeAnalysis.collisions.statistics.riskFactors.alcoholInvolved}
+                  <div style={{marginBottom: '8px', fontSize: '13px'}}>
+                    <span style={{color: '#f97316'}}>●</span> Minor Injury: {routeAnalysis.collisions.statistics.bySeverity.minorInjury}
                   </div>
-                )}
-                {routeAnalysis.collisions.statistics.riskFactors.aggressiveDriver > 0 && (
-                  <div style={{marginBottom: '6px', fontSize: '12px'}}>
-                    ⚠️ Aggressive Driving: {routeAnalysis.collisions.statistics.riskFactors.aggressiveDriver}
+                  <div style={{marginBottom: '8px', fontSize: '13px'}}>
+                    <span style={{color: '#fbbf24'}}>●</span> Possible Injury: {routeAnalysis.collisions.statistics.bySeverity.possibleInjury}
                   </div>
-                )}
-                {routeAnalysis.collisions.statistics.riskFactors.phoneInvolved > 0 && (
-                  <div style={{marginBottom: '6px', fontSize: '12px'}}>
-                    ⚠️ Phone Involved: {routeAnalysis.collisions.statistics.riskFactors.phoneInvolved}
+                  <div style={{marginBottom: '8px', fontSize: '13px'}}>
+                    <span style={{color: '#a3a3a3'}}>●</span> No Injury: {routeAnalysis.collisions.statistics.bySeverity.noInjury}
                   </div>
+
+                  <h4 style={{marginTop: '15px', marginBottom: '10px', fontSize: '14px'}}>Risk Factors:</h4>
+                  {routeAnalysis.collisions.statistics.riskFactors.bicycleInvolved > 0 && (
+                    <div style={{marginBottom: '6px', fontSize: '12px'}}>
+                      ⚠️ Bicycle Involved: {routeAnalysis.collisions.statistics.riskFactors.bicycleInvolved}
+                    </div>
+                  )}
+                  {routeAnalysis.collisions.statistics.riskFactors.alcoholInvolved > 0 && (
+                    <div style={{marginBottom: '6px', fontSize: '12px'}}>
+                      ⚠️ Alcohol Involved: {routeAnalysis.collisions.statistics.riskFactors.alcoholInvolved}
+                    </div>
+                  )}
+                  {routeAnalysis.collisions.statistics.riskFactors.aggressiveDriver > 0 && (
+                    <div style={{marginBottom: '6px', fontSize: '12px'}}>
+                      ⚠️ Aggressive Driving: {routeAnalysis.collisions.statistics.riskFactors.aggressiveDriver}
+                    </div>
+                  )}
+                  {routeAnalysis.collisions.statistics.riskFactors.phoneInvolved > 0 && (
+                    <div style={{marginBottom: '6px', fontSize: '12px'}}>
+                      ⚠️ Phone Involved: {routeAnalysis.collisions.statistics.riskFactors.phoneInvolved}
+                    </div>
+                  )}
+                </>
                 )}
-
-                {routeAnalysis.collisions.impact.totalImpact > 0 && (
-                  <div style={{marginTop: '15px', paddingTop: '10px', borderTop: '1px solid #444'}}>
-                    <p style={{margin: '4px 0', fontSize: '13px'}}>
-                      <strong>Collision Impact:</strong> {(routeAnalysis.collisions.impact.safetyPenalty * -3).toFixed(2)} point penalty
-                    </p>
-                    <p style={{margin: '4px 0', fontSize: '12px', color: '#aaa'}}>
-                      Adjusted Safety Rating: {routeAnalysis.summary.averageSafetyRating.toFixed(2)} / 3.00
-                    </p>
-                  </div>
-                )}
-
-                {/* Filter Controls */}
-                <div style={{marginTop: '20px', paddingTop: '15px', borderTop: '1px solid #444'}}>
-                  <h4 style={{marginBottom: '10px', fontSize: '14px'}}>Display Filters:</h4>
-
-                  <label style={{display: 'block', marginBottom: '8px', fontSize: '12px'}}>
-                    <input
-                      type="checkbox"
-                      checked={collisionFilters.showCollisions}
-                      onChange={(e) => setCollisionFilters({...collisionFilters, showCollisions: e.target.checked})}
-                      style={{marginRight: '6px'}}
-                    />
-                    Show Collision Markers
-                  </label>
-
-                  <label style={{display: 'block', marginBottom: '8px', fontSize: '12px'}}>
-                    Max Distance: {collisionFilters.maxDistance}m
-                    <input
-                      type="range"
-                      min="25"
-                      max="200"
-                      step="25"
-                      value={collisionFilters.maxDistance}
-                      onChange={(e) => setCollisionFilters({...collisionFilters, maxDistance: parseInt(e.target.value)})}
-                      style={{marginLeft: '10px', width: '100px'}}
-                    />
-                  </label>
-
-                  <label style={{display: 'block', marginBottom: '8px', fontSize: '12px'}}>
-                    Min Severity: {['None', 'Possible', 'Minor', 'Serious'][collisionFilters.minSeverity]}
-                    <input
-                      type="range"
-                      min="0"
-                      max="3"
-                      step="1"
-                      value={collisionFilters.minSeverity}
-                      onChange={(e) => setCollisionFilters({...collisionFilters, minSeverity: parseInt(e.target.value)})}
-                      style={{marginLeft: '10px', width: '100px'}}
-                    />
-                  </label>
-
-                  <label style={{display: 'block', marginBottom: '8px', fontSize: '12px'}}>
-                    <input
-                      type="checkbox"
-                      checked={collisionFilters.bicycleOnly}
-                      onChange={(e) => setCollisionFilters({...collisionFilters, bicycleOnly: e.target.checked})}
-                      style={{marginRight: '6px'}}
-                    />
-                    Bicycle-Involved Only
-                  </label>
-                </div>
               </div>
+            )}
+
+            {/* No data available */}
+            {!routeAnalysis && (
+              <>
+              <div style={{marginTop: '30px', paddingTop: '20px', borderTop: '1px solid #444'}}>
+                <p style={{ fontSize: '13px'}}>
+                  Enter Origin and Destination, or click the randomize button for a safety analysis
+                </p>
+              </div>
+              </>
             )}
 
             {routeAnalysis && routeAnalysis.error && (

@@ -73,6 +73,18 @@ export default function MapTesting({ borderRadius, markers = {}, route = {}, lan
         return 2.5; // Thinnest - unknown
     }
   };
+  const getSafetyRating = (rating) => {
+    switch(rating) {
+      case 3:
+        return "Dedicated bike path";
+      case 2:
+        return "Bike lane";
+      case 1:
+          return "Shared lane";
+      default:
+          return "N/A";
+    }
+  }
 
   return (
     <MapContainer
@@ -105,8 +117,8 @@ export default function MapTesting({ borderRadius, markers = {}, route = {}, lan
           >
             <Popup>
               <strong>{lane.tags?.name || 'Bike Lane'}</strong><br/>
-              Safety Rating: {safetyRating || 'Unknown'}<br/>
-              Type: {lane.tags?.highway || 'N/A'}
+              {getSafetyRating(safetyRating)}
+              {/*}Type: {lane.tags?.highway || 'N/A'}{*/}
             </Popup>
           </Polyline>
         );
