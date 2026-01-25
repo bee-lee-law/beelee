@@ -230,8 +230,8 @@ const eggText = "-Ribbit-";
 
 export default function Home() {
     return (
-        <div className="min-h-screen flex items-center justify-center px-6 ">
-            <main className="max-w-2xl w-full flex justify-center">
+        <div className="min-h-screen flex items-center justify-center px-6 overflow-hidden">
+            <main className="max-w-2xl w-full flex justify-center overflow-hidden">
                 <GameContainer />
             </main>
         </div>
@@ -249,7 +249,7 @@ function GameContainer(props) {
         const updateScreenSize = () => {
             // Calculate responsive height based on viewport
             const viewportHeight = window.innerHeight;
-            const mobileHeight = Math.min(viewportHeight - 100, 800); // Max 800px, leave 100px margin for mobile browser UI
+            const mobileHeight = 700;
             const desktopHeight = Math.min(viewportHeight - 80, 700); // Max 700px, leave 80px margin
 
             screenSizeRef.current = {
@@ -361,33 +361,6 @@ function GameContainer(props) {
             setPointer(prev => ({ ...prev, [id]: false }));
         }
     }
-
-    // Debug: Toggle game state with 'g' key
-    /*
-    useEffect(() => {
-        const handleDebugKey = (e) => {
-            if (e.key === 'g') {
-                setGameStatus(prev => {
-                    const states = ['playing', 'gameOver', 'shopping'];
-                    const currentIndex = states.indexOf(prev);
-                    const nextIndex = (currentIndex + 1) % states.length;
-                    if(states[nextIndex] == 'playing'){
-                        initializeValues();
-                    }
-                    if(states[nextIndex] == 'shopping'){
-                        sendToShop();
-                    }
-                    console.log(`[DEBUG] Game state: ${prev} -> ${states[nextIndex]}`);
-                    return states[nextIndex];
-                });
-            }
-
-        };
-
-        window.addEventListener('keydown', handleDebugKey);
-        return () => window.removeEventListener('keydown', handleDebugKey);
-    }, []);
-    */
 
     const handleShop = (stat) => {
         let cost = playerLevel.current * 5;
