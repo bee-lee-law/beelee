@@ -33,16 +33,11 @@ async function getDirections(userInput) {
     throw new Error('Failed to fetch route data');
   }
   const out = await response.json();
-  console.log(out);
   return out;
 }
 
   async function getLanes(city = 'Grand Rapids') {
     const url = `${process.env.NEXT_PUBLIC_API_URL}/infrastructure/bike-lanes?city=${encodeURIComponent(city)}`;
-    for(var i=0; i<locationList.length; i++){
-      console.log(locationList[i].loc_name);
-      console.log(`${locationList[i].lat},${locationList[i].lng}`);
-    }
 
     // Create an AbortController for timeout
     const controller = new AbortController();
@@ -60,12 +55,10 @@ async function getDirections(userInput) {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        console.log('Failed to fetch bike lane data');
         return({error: 'Failed to fetch bike lane data, reset to try again'});
       }
 
       const out = await response.json();
-      console.log(out);
       return out;
     } catch (error) {
       clearTimeout(timeoutId);
@@ -83,7 +76,6 @@ async function getDirections(userInput) {
     let ymin = String(Math.min(...lats));
     let xmax = String(Math.max(...longs));
     let ymax = String(Math.max(...lats));
-    console.log(xmin + ',' + ymin + ',' + xmax + ',' + ymax);
     return xmin + ',' + ymin + ',' + xmax + ',' + ymax;
   }
 
@@ -112,12 +104,10 @@ async function getDirections(userInput) {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        console.log('Failed to fetch collision data');
         return({error: 'Failed to fetch collision data, reset to try again'});
       }
 
       const out = await response.json();
-      console.log(out);
       return out;
     } catch (error) {
       clearTimeout(timeoutId);
@@ -193,7 +183,6 @@ export default function Home() {
         setisLoadingLookup(true);
         try {
           const results = await geocodeLocation(value);
-          console.log(results);
           setSuggestions(results);
         } catch (error) {
           console.error('Geocoding error:', error);
@@ -298,7 +287,6 @@ export default function Home() {
       setLaneData(laneInfo);
     }
     fetchData();
-    console.log('fetching lane data');
   }, []);
 
   // Route lookup handling
@@ -357,7 +345,6 @@ export default function Home() {
       try {
         const analysis = analyzeRouteCoverage(routeData, laneData, collisionData, 15);
         setRouteAnalysis(analysis);
-        console.log('Route Analysis:', analysis);
       } catch (error) {
         console.error('Failed to analyze route:', error);
         setRouteAnalysis(null);
@@ -729,7 +716,6 @@ function OutputBar({ isMobile, userInput, routeAnalysis, collisionFilters, setCo
 
   // Generate summary text for collapsed view
   const getSummaryText = () => {
-    console.log(userInput);
     if(userInput.origin && userInput.origin.address && getCity(userInput.origin.address) != 'Grand Rapids') {
       return `Warning: Bike Lane and Traffic data not available outside of Grand Rapids`
     } else if (userInput.origin && userInput.destination) {

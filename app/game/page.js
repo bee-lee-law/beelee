@@ -429,7 +429,6 @@ function GameContainer(props) {
     });
 
     const initializeValues = (isMobile, newRun = false) => {
-        console.log('initializing');
         // Position player near bottom, accounting for UI height (120px) + player height (40px) + margin
         const playerY = screenSizeRef.current.height - 160;
         const playerX = isMobile ? 187 : 300;
