@@ -1512,7 +1512,7 @@ function GameContainer(props) {
                 <div style={talkingHeadOuter}>
                     <div style={talkingHeadTextBox}>
                         <div style={{
-                            fontSize: '14px',
+                            fontSize: '12px',
                             lineHeight: '1.4',
                             wordWrap: 'break-word'
                         }}>
