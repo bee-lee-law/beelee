@@ -62,8 +62,8 @@ export default function Home() {
           </div>
           <div className="text-sm">Small slices of my skills and personality</div>
           <div className="flex flex-col items-center justify-around gap-8 mt-4">
-            <Project img={delta_flyer_img} name={"delta flyer"} desc={deltaFlyerDesc} link={"game"} tags={["React", "javascript", "game"]} />
             <Project img={route_safety_img} name={"bike route safety"} desc={routeSafetyDesc} link={"maps"} tags={["data", "API", "geography", "GIS"]} />
+            <Project img={delta_flyer_img} name={"delta flyer"} desc={deltaFlyerDesc} link={"game"} tags={["React", "javascript", "game"]} />
           </div>
         </section>
 

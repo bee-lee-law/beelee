@@ -8,6 +8,8 @@ import { geocodeLocation } from '@/src/utils/geocoding';
 import { analyzeRouteCoverage } from '@/src/utils/routeAnalysis';
 import { decodePolyline } from '../../src/utils/polylineDecoder';
 import { locationList } from '@/src/utils/locationList';
+import Image from 'next/image';
+import logoCube from '@/public/BeeCube.svg'
 
 // Dynamically import the map component with SSR disabled to avoid "window is not defined" error
 
@@ -1131,15 +1133,20 @@ function HelpOverlay({ onClose }) {
     }
   };
 
+  function Logo(){
+    return <Image src={logoCube} alt={'logo'} style={{width: '64px', height: 'auto'}} />
+  }
+
   return (
     <div style={backdropStyle} onClick={handleBackdropClick}>
       <div style={modalStyle}>
         <button style={closeButtonStyle} onClick={onClose}>&times;</button>
 
-        <h1 style={{marginTop: 0, marginBottom: '16px', fontSize: '24px'}}>Bike Route Safety Analyzer</h1>
-
-        <section style={{marginBottom: '20px'}}>
-          <h2 style={{fontSize: '18px', marginBottom: '8px', color: '#4ade80'}}>About</h2>
+        {/* <h1 style={{marginTop: 0, marginBottom: '16px', fontSize: '24px'}}>Bike Route Safety Analyzer</h1> */}
+        <div className="flex items-center mb-6">
+          <Logo /> <div className="ml-4" style={{fontSize: '36px'}}>route safety analyzer</div> 
+        </div> 
+        <section className="mb-12">
           <p style={{fontSize: '14px', lineHeight: 1.6, margin: 0}}>
             This tool helps cyclists find safer routes by analyzing bike infrastructure coverage
             and historical collision data along your route. These safety ratings are backed by data,
@@ -1147,23 +1154,29 @@ function HelpOverlay({ onClose }) {
           </p>
         </section>
 
-        <section style={{marginBottom: '20px'}}>
-          <h2 style={{fontSize: '18px', marginBottom: '8px', color: '#4ade80'}}>How to Use</h2>
-          <ul style={{fontSize: '14px', lineHeight: 1.8, margin: 0, paddingLeft: '20px'}}>
-            <li>Enter a start and end location, or click 🎲 for random locations (from a list I generated of some cool spots in Grand Rapids)</li>
-            <li>View the route on the map with color-coded bike infrastructure and reported traffic collisions within the last year</li>
-            <li>Check the safety analysis panel for detailed coverage breakdown</li>
-            <li>Click ↻ to reset and search for a new route</li>
+        <section className="mb-12">
+          <div className="flex items-center" style={{color: '#A882DD'}}>
+            <h2 className="mr-2" style={{fontSize: '18px', marginBottom: '8px'}}>how to use</h2>
+            <hr className="flex-1" />
+          </div>
+          <ul style={{fontSize: '14px', lineHeight: 1.5, margin: 0, paddingLeft: '20px'}}>
+            <li className="mb-3">Enter a start and end location, or click 🎲 for random locations (from a list I generated of some cool spots in Grand Rapids)</li>
+            <li className="mb-3">View the route on the map with color-coded bike infrastructure and reported traffic collisions within the last year</li>
+            <li className="mb-3">Check the safety analysis panel for detailed coverage breakdown</li>
+            <li className="mb-3">Click ↻ to reset and search for a new route</li>
           </ul>
         </section>
 
-        <section style={{marginBottom: '20px'}}>
-          <h2 style={{fontSize: '18px', marginBottom: '8px', color: '#4ade80'}}>Data Sources</h2>
+        <section className="mb-12">
+          <div className="flex items-center" style={{color: '#A882DD'}}>
+            <h2 className="mr-2" style={{fontSize: '18px', marginBottom: '8px'}}>data sources</h2>
+            <hr className="flex-1" />
+          </div>
           <ul style={{fontSize: '14px', lineHeight: 1.8, margin: 0, paddingLeft: '20px'}}>
-            <li>Bike Infrastructure data: <a style={{color: "rgb(133, 145, 212)"}} href="https://overpass-api.de/">Overpass API</a></li>
-            <li>Collision data: <a style={{color: "rgb(133, 145, 212)"}} href="https://grpd-grandrapids.hub.arcgis.com/">GRPD ARCGIS</a></li>
-            <li>Routing: <a style={{color: "rgb(133, 145, 212)"}} href="https://www.mapbox.com/">Mapbox</a></li>
-            <li>Maps: <a style={{color: "rgb(133, 145, 212)"}} href="https://www.openstreetmap.org/">OpenStreetMap</a></li>
+            <li>Bike Infrastructure data: <a style={{color: "#45CB85"}} href="https://overpass-api.de/">Overpass API</a></li>
+            <li>Collision data: <a style={{color: "#45CB85"}} href="https://grpd-grandrapids.hub.arcgis.com/">GRPD ARCGIS</a></li>
+            <li>Routing: <a style={{color: "#45CB85"}} href="https://www.mapbox.com/">Mapbox</a></li>
+            <li>Maps: <a style={{color: "#45CB85"}} href="https://www.openstreetmap.org/">OpenStreetMap</a></li>
           </ul>
         </section>
 
