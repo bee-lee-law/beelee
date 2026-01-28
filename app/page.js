@@ -41,53 +41,41 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen flex-column items-center justify-center px-6 w-5/6 m-auto" style={{border: debug ? '1px solid red' : 'none'}}>
-      <header className="max-w-2xl w-full flex-column items-center justify-between mt-4 ml-auto mr-auto" style={{border: debug ? '1px solid white' : 'none'}} >
-        <div className="flex items-center mb-2 ml-2">
-          <Logo /><div className="ml-4" style={{fontSize: '48px'}}>bee lee</div> 
-        </div>
-      </header>
-      <div className="flex items-center justify-center px-8 py-6" style={{border: debug ? '1px solid blue' : 'none'}}>
-      <main className="max-w-2xl w-full" style={{border: debug ? '1px solid white' : 'none'}}>
+    <div className="min-h-screen flex-column items-center justify-center px-6 w-5/6 m-auto mb-4" style={{border: debug ? '1px solid red' : 'none'}}>
+
+      <main className="max-w-2xl w-full ml-auto mr-auto mt-20" style={{border: debug ? '1px solid white' : 'none'}}>
         <section className="mb-12">
-          <div className="flex items-center">
-            <hr className="flex-1" style={{color: myPurp}} />
-            <h1 className="text-base mb-1 ml-4 mr-4" style={{color: myPurp}}><span className="font-bold">B</span>randon <span className="font-bold">Lee</span> <span className="font-bold">Law</span>rence</h1>
-            <hr className="flex-1" style={{color: myPurp}} />
+          <div className="flex items-center mb-6">
+            <Logo /> <div className="ml-4" style={{fontSize: '48px'}}>bee lee</div> 
           </div> 
-{/*           <div className="flex items-center">
-
-            <h1 className="text-base mb-1 ml-auto mr-auto" style={{color: myPurp}}><span className="font-bold">B</span>randon <span className="font-bold">Lee</span> <span className="font-bold">Law</span>rence</h1>
-
-          </div> */}
           <p className="text-sm">
-            Business analyst and back-end developer specializing in data solutions.
+            My name is <MyName />. I'm a business analyst and back-end developer specializing in data and automation solutions.
+            I have a strong background in mathematics, logistics, and management, giving me a valuable perspective when it comes
+            to systematic and interpersonal connections
           </p>
         </section>
 
         <section className="mb-12">
-          <div className="flex items-center mb-2">
-            <h1 className="text-lg mb-1 font-bold" style={{color: myPurp}}>Projects&nbsp;</h1>
+          <div className="flex items-center">
+            <h1 className="text-lg mb-1 font-bold" style={{color: myPurp}}>projects&nbsp;</h1>
             <hr className="flex-1" style={{color: myPurp}} />
           </div>
-          <div className="flex flex-col items-center justify-around gap-8">
-            <Project img={delta_flyer_img} name={"Delta Flyer"} desc={deltaFlyerDesc} link={"game"} tags={["React", "javascript", "game"]} />
-            <Project img={route_safety_img} name={"Bike Route Safety"} desc={routeSafetyDesc} link={"maps"} tags={["data", "API", "geography", "GIS"]} />
+          <div className="text-sm">Small slices of my skills and personality</div>
+          <div className="flex flex-col items-center justify-around gap-8 mt-4">
+            <Project img={delta_flyer_img} name={"delta flyer"} desc={deltaFlyerDesc} link={"game"} tags={["React", "javascript", "game"]} />
+            <Project img={route_safety_img} name={"bike route safety"} desc={routeSafetyDesc} link={"maps"} tags={["data", "API", "geography", "GIS"]} />
           </div>
         </section>
 
-        <section className="mb-4">
+        <section className="mb-6">
           <div className="flex items-center">
-            <h1 className="text-lg mb-1 font-bold" style={{color: myPurp}}>Contact&nbsp;</h1>
+            <h1 className="text-lg mb-1 font-bold" style={{color: myPurp}}>contact&nbsp;</h1>
             <hr className="flex-1" style={{color: myPurp}} />
           </div>
           <p className="text-sm">
             Contact me at <a href="mailto:info@beeleelaw.com" style={{color: myGreen}}>info@beeleelaw.com</a> for freelance or hiring inquiries. Resume available on request
           </p>
         </section>
-
-      </main>
-      </div>
       <footer className="w-full h-14 flex items-center justify-between" style={{border: debug ? '1px solid white' : 'none'}} >
         <hr className="flex-1" style={{color: myPurp}} />
         <div className="flex gap-2 ml-4 mr-2">
@@ -97,6 +85,9 @@ export default function Home() {
         </div>
         <hr className="flex-1" style={{color: myPurp}} />
       </footer>
+      </main>
+
+
     </div>
   );
 }
@@ -105,10 +96,16 @@ function Logo(){
   return <Image src={logoCube} alt={'logo'} style={{width: '64px', height: 'auto'}} />
 }
 
+function MyName(){
+  return(
+    <span style={{color: myGreen}}><span className="font-bold">B</span>randon <span className="font-bold">Lee</span> <span className="font-bold">Law</span>rence</span>
+  )
+}
+
 function Project({img, name, desc, link, tags}){
   return(
     <Link href={link} target="_blank">
-      <div className="bg-zinc-600 px-2 py-2 rounded w-5/6 mr-auto ml-auto">
+      <div className="bg-zinc-700 px-2 py-2 rounded w-5/6 mr-auto ml-auto">
         <div className="flex-row gap-2 mb-1">
           <div className="flex items-center mb-2 font-bold" style={{color: myGreen}}>
             <hr className="flex-1" style={{color: myGreen}} />
@@ -140,20 +137,3 @@ function Tag({name}){
     </div>
   )
 }
-
-/*
-	project component background
-	stack projects
-	vertical flow to project boxes
-	color of tags (contrast)
-	center align logos
-	try centering section logos
-	adjust margins based on screen size
-	Bigger, Bold Headers
-	
-
-	Play with vertical margins
-	better horz margins
-	consistency
-
-*/
