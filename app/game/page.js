@@ -1265,7 +1265,7 @@ function GameContainer(props) {
         background: '#1a1a1a',
         borderRadius: screenSizeRef.current.radius,
         overflow: 'hidden',
-        userSelect: 'none',
+        //userSelect: 'none',
     }
 
     const playState = () => {
@@ -1562,7 +1562,7 @@ function GameContainer(props) {
     }
 
     return (
-        <div className="flex-none" style={containerStyle} onKeyDown={handleKeyDown}>
+        <div className="flex-none select-none [--webkit-tap-highlight-color:transparent] [--webkit-touch-callout:none]" style={containerStyle} onKeyDown={handleKeyDown}>
             {/* Debug state indicator */}
             {/*}
             <div style={{

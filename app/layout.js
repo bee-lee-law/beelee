@@ -7,7 +7,7 @@ const inconsolata = Inconsolata({
 });
 
 export const metadata = {
-  title: "Bee Lee",
+  title: "bee lee",
   description: "Portfolio showcasing my work and projects",
 };
 

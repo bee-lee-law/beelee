@@ -6,7 +6,7 @@ import route_safety_img from "@/public/route_safety_img.png";
 import githubMark from '@/public/github-mark.svg';
 import linkedInMark from '@/public/InBug-White.png';
 import instaMark from '@/public/Instagram_Glyph_White.svg';
-import logoCube from '@/public/BeeCube.svg'
+import logoCube from '@/public/beeleelogo.svg'
 import Link from "next/link";
 
 
@@ -17,8 +17,8 @@ import Link from "next/link";
   const myPurp = "#A882DD";
 
   const deltaFlyerDesc = `
-    I don't have the same eye as my peers when it comes to front-end visual design, but that doesn't mean I can't develop
-    front-end applications! Here's a little rogue-like shooter, developed in React, just for fun
+    I lean more toward building than polishing, but I still love front-end work. Here's a small rogue-like shooter
+    I built in React for fun
   `
 
   const routeSafetyDesc = `
@@ -46,7 +46,7 @@ export default function Home() {
       <main className="max-w-2xl w-full ml-auto mr-auto mt-20" style={{border: debug ? '1px solid white' : 'none'}}>
         <section className="mb-12">
           <div className="flex items-center mb-6">
-            <Logo /> <div className="ml-4" style={{fontSize: '48px'}}>bee lee</div> 
+            <Logo /> {/* <div className="ml-4" style={{fontSize: '48px'}}>bee lee</div>  */}
           </div> 
           <p className="text-sm">
             My name is <MyName />. I'm a business analyst and back-end developer specializing in data and automation solutions.
@@ -93,7 +93,7 @@ export default function Home() {
 }
 
 function Logo(){
-  return <Image src={logoCube} alt={'logo'} style={{width: '64px', height: 'auto'}} />
+  return <Image src={logoCube} alt={'logo'} style={{width: '256px', height: 'auto'}} />
 }
 
 function MyName(){
