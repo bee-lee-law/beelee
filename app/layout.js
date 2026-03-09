@@ -1,5 +1,6 @@
 import { Inconsolata } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "../src/contexts/AuthContext";
 
 const inconsolata = Inconsolata({
   variable: "--font-inconsolata",
@@ -17,7 +18,9 @@ export default function RootLayout({ children }) {
       <body
         className={`${inconsolata.variable} antialiased`}
       >
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

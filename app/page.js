@@ -29,10 +29,11 @@ import Link from "next/link";
 export default function Home() {
   const [debug, setDebug] = useState(false);
   const iconStyle = {width: 25, height: 25}
+  const enableDebug = false;
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'd') {
+      if (e.key === 'd' && enableDebug) {
         setDebug(prev => !prev);
       }
     };
