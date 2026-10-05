@@ -8,8 +8,8 @@ const inconsolata = Inconsolata({
 });
 
 export const metadata = {
-  title: "bee lee",
-  description: "Portfolio showcasing my work and projects",
+  title: "bee lee · data & automation developer",
+  description: "Brandon Lee Lawrence: business analyst and back-end developer specializing in data and automation for warehousing and fulfillment",
 };
 
 export default function RootLayout({ children }) {
