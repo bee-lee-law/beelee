@@ -1,31 +1,46 @@
 @import "tailwindcss";
 
-:root {
-  --background: #27272A;
-  --foreground: #fffef0;
+@theme {
+  /* brand colors: green = clickable + name, purple = structure, cream = content */
+  --color-brand-green: #45CB85;
+  --color-brand-purple: #A882DD;
+  --color-cream: #fffef0;
+
+  /* type roles: heading > card > title > body > secondary > meta */
+  --text-heading: 1.375rem;
+  --text-heading--line-height: 1.3;
+  /* card titles: 19px bold counts as large text, so brand purple passes on the card grey */
+  --text-card: 1.1875rem;
+  --text-card--line-height: 1.3;
+  --text-title: 1.0625rem;
+  --text-title--line-height: 1.4;
+  --text-secondary: 0.9375rem;
+  --text-secondary--line-height: 1.6;
+  --text-meta: 0.8125rem;
+  --text-meta--line-height: 1.4;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #333333;
-    --foreground: #fffef0;
-  }
+:root {
+  --background: #27272A;
+  --foreground: var(--color-cream);
 }
 
 html, body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-inconsolata);
+  font-size: 1rem;
+  line-height: 1.6;
   margin: 0;
   padding: 0;
 }
 
 :focus-visible {
-  outline: 2px solid #45CB85;
+  outline: 2px solid var(--color-brand-green);
   outline-offset: 2px;
 }
 
 ::selection {
-  background: #A882DD;
-  color: #27272A;
+  background: var(--color-brand-purple);
+  color: var(--background);
 }
